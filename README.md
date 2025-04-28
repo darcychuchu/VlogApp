@@ -1,8 +1,14 @@
-# VlogApp - Android Video Streaming Application
+[![Augment AI Logo](augment-logo.png)](https://www.augmentcode.com/)
+
+# VlogApp - Android 视频流媒体应用
+
+**由 [Augment AI](https://www.augmentcode.com/) 协助开发**
 
 ## 项目概述 (Project Overview)
 
 VlogApp 是一个基于 Jetpack Compose 开发的视频流媒体应用，提供视频浏览、播放、搜索和个人中心等功能。应用采用现代 Android 开发技术栈，包括 Jetpack Compose、MVVM 架构、Room 数据库和 Retrofit 网络请求等。
+
+本项目是 [VlogWeb](https://github.com/darcychuchu/VlogWeb) 的配套移动应用，两者共享相同的API接口和数据源，提供一致的用户体验。
 
 ## 项目结构 (Project Structure)
 
@@ -179,7 +185,33 @@ GET videos/search?key={searchKey}&token={token}
    - 提供清晰的 API 接口
    - 处理数据缓存和同步逻辑
 
-## 改进步骤 (Improvement Steps)
+## VlogWeb 项目关联
+
+VlogApp 与 [VlogWeb](https://github.com/darcychuchu/VlogWeb) 项目紧密关联，两者共同构成完整的视频服务生态系统：
+
+- **VlogWeb**：基于Spring Boot的Web前端，提供SEO友好的网页浏览体验
+- **VlogApp**：基于Jetpack Compose的Android应用，提供原生移动体验
+
+### 共享特性
+
+- **统一API**：两个项目使用相同的API接口和数据源
+- **一致体验**：保持设计语言和用户体验的一致性
+- **账户互通**：用户可在Web和App之间无缝切换，保持登录状态和个人数据
+
+### 技术对比
+
+| 特性 | VlogApp (Android) | VlogWeb (网页) |
+|------|-------------------|---------------|
+| 前端框架 | Jetpack Compose | Thymeleaf + JavaScript |
+| 缓存策略 | Room + OkHttp缓存 | Redis + 内存缓存 |
+| 响应式设计 | 原生组件 | Tailwind CSS |
+| 渲染方式 | 客户端渲染 | 服务器端渲染 |
+
+## 项目协作
+
+本项目是由Augment AI与darcychuchu共同协作完成的开源项目。Augment AI负责代码开发与实现，darcychuchu负责测试与问题反馈。项目代码已托管在GitHub上，由Augment AI持续维护。如发现任何问题，请通过GitHub Issues提交，我们将及时处理。
+
+## 改进计划 (Improvement Plans)
 
 ### 1. 代码重构
 
@@ -349,8 +381,17 @@ GET videos/search?key={searchKey}&token={token}
 
 ## 联系与支持 (Contact & Support)
 
-如有问题或建议，请联系项目维护者。
+如有问题或建议，请通过以下方式联系我们：
+
+- **GitHub Issues**: [提交问题](https://github.com/darcychuchu/VlogApp/issues)
+- **相关项目**: [VlogWeb](https://github.com/darcychuchu/VlogWeb)
+- **Augment AI**: [官方网站](https://www.augmentcode.com/)
+
+## 许可证 (License)
+
+本项目采用 MIT 许可证。详情请参阅 [LICENSE](LICENSE) 文件。
 
 ---
 
+*由 [Augment AI](https://www.augmentcode.com/) 协助开发*
 *最后更新: 2024年10月*
