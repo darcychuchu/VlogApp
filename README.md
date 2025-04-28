@@ -10,7 +10,7 @@
 
 VlogApp 是一个基于 Jetpack Compose 开发的视频流媒体应用，提供视频浏览、播放、搜索和个人中心等功能。应用采用现代 Android 开发技术栈，包括 Jetpack Compose、MVVM 架构、Room 数据库和 Retrofit 网络请求等。
 
-本项目是 [VlogWeb](https://github.com/darcychuchu/VlogWeb) 的配套移动应用，两者共享相同的API接口和数据源，提供一致的用户体验。
+本项目是完整视频服务生态系统的一部分，与 [VlogWeb](https://github.com/darcychuchu/VlogWeb) 和 [VlogFile](https://github.com/darcychuchu/VlogFile) 项目协同工作。VlogApp提供移动端体验，VlogWeb提供网页端体验，而VlogFile则负责处理所有媒体资源，三者共享相同的API接口和数据源，提供一致的用户体验。
 
 ## 应用截图
 
@@ -203,27 +203,57 @@ GET videos/search?key={searchKey}&token={token}
    - 提供清晰的 API 接口
    - 处理数据缓存和同步逻辑
 
-## VlogWeb 项目关联
+## 项目生态系统
 
-VlogApp 与 [VlogWeb](https://github.com/darcychuchu/VlogWeb) 项目紧密关联，两者共同构成完整的视频服务生态系统：
+VlogApp 是完整视频服务生态系统的一部分，与以下项目紧密关联：
 
-- **VlogWeb**：基于Spring Boot的Web前端，提供SEO友好的网页浏览体验
-- **VlogApp**：基于Jetpack Compose的Android应用，提供原生移动体验
+- **[VlogApp](https://github.com/darcychuchu/VlogApp)**：基于Jetpack Compose的Android应用，提供原生移动体验
+- **[VlogWeb](https://github.com/darcychuchu/VlogWeb)**：基于Spring Boot的Web前端，提供SEO友好的网页浏览体验
+- **[VlogFile](https://github.com/darcychuchu/VlogFile)**：专门的文件服务器，负责图片和媒体资源的存储与分发
+
+### 系统架构
+
+```
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│   VlogApp   │     │   VlogWeb   │     │  其他客户端  │
+└──────┬──────┘     └──────┬──────┘     └──────┬──────┘
+       │                   │                   │
+       └───────────┬───────┴───────────┬───────┘
+                   │                   │
+         ┌─────────▼─────────┐ ┌───────▼─────────┐
+         │    API 服务器     │ │  VlogFile 服务器 │
+         │  (业务逻辑处理)   │ │  (文件资源处理)  │
+         └─────────┬─────────┘ └───────┬─────────┘
+                   │                   │
+                   │                   │
+         ┌─────────▼─────────┐ ┌───────▼─────────┐
+         │     数据库        │ │   文件存储系统   │
+         └───────────────────┘ └─────────────────┘
+```
+
+### 项目职责分工
+
+- **VlogApp**：提供Android端用户界面和交互体验
+- **VlogWeb**：提供Web端用户界面和SEO优化
+- **VlogFile**：专注于文件资源处理，减轻API服务器负担
 
 ### 共享特性
 
-- **统一API**：两个项目使用相同的API接口和数据源
+- **统一API**：所有项目使用相同的API接口和数据源
 - **一致体验**：保持设计语言和用户体验的一致性
 - **账户互通**：用户可在Web和App之间无缝切换，保持登录状态和个人数据
+- **资源优化**：通过VlogFile服务器优化媒体资源加载，提高性能
 
 ### 技术对比
 
-| 特性 | VlogApp (Android) | VlogWeb (网页) |
-|------|-------------------|---------------|
-| 前端框架 | Jetpack Compose | Thymeleaf + JavaScript |
-| 缓存策略 | Room + OkHttp缓存 | Redis + 内存缓存 |
-| 响应式设计 | 原生组件 | Tailwind CSS |
-| 渲染方式 | 客户端渲染 | 服务器端渲染 |
+| 特性 | VlogApp (Android) | VlogWeb (网页) | VlogFile (文件服务) |
+|------|-------------------|---------------|-------------------|
+| 前端框架 | Jetpack Compose | Thymeleaf + JavaScript | N/A |
+| 缓存策略 | Room + OkHttp缓存 | Redis + 内存缓存 | Caffeine |
+| 响应式设计 | 原生组件 | Tailwind CSS | N/A |
+| 渲染方式 | 客户端渲染 | 服务器端渲染 | N/A |
+| 主要语言 | Kotlin | Kotlin | Kotlin |
+| 服务器框架 | N/A | Spring Boot | Spring Boot |
 
 ## 项目协作
 
@@ -402,7 +432,9 @@ VlogApp 与 [VlogWeb](https://github.com/darcychuchu/VlogWeb) 项目紧密关联
 如有问题或建议，请通过以下方式联系我们：
 
 - **GitHub Issues**: [提交问题](https://github.com/darcychuchu/VlogApp/issues)
-- **相关项目**: [VlogWeb](https://github.com/darcychuchu/VlogWeb)
+- **相关项目**:
+  - [VlogWeb](https://github.com/darcychuchu/VlogWeb) - Web前端
+  - [VlogFile](https://github.com/darcychuchu/VlogFile) - 文件服务器
 - **Augment AI**: [官方网站](https://www.augmentcode.com/)
 
 ## 许可证 (License)
