@@ -1,8 +1,10 @@
-[![Augment AI Logo](augment-logo.png)](https://www.augmentcode.com/)
-
-# VlogApp - Android 视频流媒体应用
-
-**由 [Augment AI](https://www.augmentcode.com/) 协助开发**
+<div align="center">
+  <a href="https://www.augmentcode.com/">
+    <img src="https://avatars.githubusercontent.com/u/108155640?s=200&v=4" alt="Augment AI Logo" width="200" height="200">
+  </a>
+  <h1>VlogApp - Android 视频流媒体应用</h1>
+  <p><b>由 <a href="https://www.augmentcode.com/">Augment AI</a> 协助开发</b></p>
+</div>
 
 ## 项目概述 (Project Overview)
 
@@ -393,5 +395,7 @@ VlogApp 与 [VlogWeb](https://github.com/darcychuchu/VlogWeb) 项目紧密关联
 
 ---
 
-*由 [Augment AI](https://www.augmentcode.com/) 协助开发*
-*最后更新: 2024年10月*
+<div align="center">
+  <p><b>由 <a href="https://www.augmentcode.com/">Augment AI</a> 协助开发</b></p>
+  <p><i>最后更新: 2024年10月</i></p>
+</div>
