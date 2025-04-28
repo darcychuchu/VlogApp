@@ -12,6 +12,22 @@ VlogApp 是一个基于 Jetpack Compose 开发的视频流媒体应用，提供�
 
 本项目是 [VlogWeb](https://github.com/darcychuchu/VlogWeb) 的配套移动应用，两者共享相同的API接口和数据源，提供一致的用户体验。
 
+## 应用截图
+
+<div align="center">
+  <h3>首页</h3>
+  <img src="screenshot/Screenshot_home_com.vlog.app.jpg" alt="首页截图" width="300">
+
+  <h3>筛选页面</h3>
+  <img src="screenshot/Screenshot_filter_com.vlog.app.jpg" alt="筛选页面截图" width="300">
+
+  <h3>视频播放器</h3>
+  <img src="screenshot/Screenshot_player_com.vlog.app.jpg" alt="视频播放器截图" width="300">
+
+  <h3>全屏播放</h3>
+  <img src="screenshot/Screenshot_full_player_com.vlog.app.jpg" alt="全屏播放截图" width="600">
+</div>
+
 ## 项目结构 (Project Structure)
 
 ```
