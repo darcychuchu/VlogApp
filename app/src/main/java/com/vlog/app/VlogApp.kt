@@ -1,5 +1,6 @@
 package com.vlog.app
 
+import android.annotation.SuppressLint
 import android.app.Application
 import android.content.Context
 import android.content.res.Configuration
@@ -39,6 +40,7 @@ class VlogApp : Application() {
     lateinit var imageFileManager: ImageFileManager
     lateinit var imageLoader: ImageLoader
 
+    @SuppressLint("HardwareIds")
     override fun onCreate() {
         super.onCreate()
 
