@@ -41,8 +41,8 @@ class AppUpdateManager(private val context: Context) {
      */
     fun needUpdate(appVersion: AppVersion): Boolean {
         // 当前版本号，实际应用中应使用BuildConfig.VERSION_CODE
-        val currentVersionCode = 1 // 模拟当前版本号
-        return appVersion.versionCode > currentVersionCode
+        val currentVersionCode = 2 // 模拟当前版本号
+        return appVersion.versionName != "1.0.5" && appVersion.versionCode != 2
     }
 
     /**

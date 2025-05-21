@@ -123,7 +123,7 @@ class ImageCacheRepository(
                 when (response.code) {
                     304 -> {
                         // 未修改，使用缓存
-                        Log.d("ImageCacheRepository", "Image not modified, using cache: $url")
+                        ////Log.d("ImageCacheRepository", "Image not modified, using cache: $url")
                         return@withContext File(cachedImage!!.localPath)
                     }
 
@@ -185,7 +185,7 @@ class ImageCacheRepository(
             imageFileManager.deleteFile(cache.localPath)
         }
         imageCacheDao.deleteByVideoId(videoId)
-        Log.d("ImageCacheRepository", "Cleared cache for video: $videoId")
+        ////Log.d("ImageCacheRepository", "Cleared cache for video: $videoId")
     }
 
     /**
@@ -197,7 +197,7 @@ class ImageCacheRepository(
             imageFileManager.deleteFile(cache.localPath)
         }
         imageCacheDao.deleteByVideoIdAndType(videoId, imageType.name)
-        Log.d("ImageCacheRepository", "Cleared cache for video: $videoId, type: ${imageType.name}")
+        ////Log.d("ImageCacheRepository", "Cleared cache for video: $videoId, type: ${imageType.name}")
     }
 
     /**
@@ -209,7 +209,7 @@ class ImageCacheRepository(
             val sizeToFree = totalSize - (maxCacheSize * 0.8).toLong() // 释放20%空间
             val filesToDelete = imageCacheDao.getOldestAccessed((sizeToFree / 50000).toInt()) // 假设平均图片大小50KB
 
-            Log.d("ImageCacheRepository", "Cleaning up cache, freeing ${sizeToFree / 1024}KB")
+            ////Log.d("ImageCacheRepository", "Cleaning up cache, freeing ${sizeToFree / 1024}KB")
 
             filesToDelete.forEach { cache ->
                 imageFileManager.deleteFile(cache.localPath)

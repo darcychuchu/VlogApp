@@ -1,7 +1,6 @@
 package com.vlog.app.screens.shorts
 
 import android.app.Application
-import android.content.Intent
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -19,7 +18,6 @@ import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -28,13 +26,13 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,9 +44,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.media3.common.MediaItem
+import androidx.media3.common.MimeTypes
 import androidx.media3.common.util.Log
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.ui.PlayerView
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.vlog.app.R
@@ -59,8 +63,6 @@ import com.vlog.app.navigation.NavigationRoutes.FullScreenRoute.VideoPlayer
 import com.vlog.app.screens.components.CommonTopBar
 import com.vlog.app.screens.components.ErrorView
 import com.vlog.app.screens.components.LoadingView
-import com.vlog.app.screens.player.EmbeddedPlayerView
-import com.vlog.app.screens.player.UnifiedPlayerActivity
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -107,7 +109,7 @@ fun ShortsScreen(
                     currentIndex = uiState.currentShortIndex,
                     onIndexChange = viewModel::setCurrentShort,
                     modifier = Modifier.padding(paddingValues),
-                    viewModel = viewModel
+                    viewModel = viewModel,
                 )
             }
         }
@@ -181,13 +183,29 @@ fun ShortItem(
     val uiState by viewModel.uiState.collectAsState()
     val videoDetail = uiState.currentVideoDetail
     val context = LocalContext.current
+    // 创建 ExoPlayer 实例
+    val exoPlayer = remember {
+        ExoPlayer.Builder(context).build()
+    }
 
     // 当页面变化时停止视频播放
     DisposableEffect(currentPageIndex) {
         onDispose {
-            // 当组件离开组合时停止视频播放
-            Log.d("ShortItem", "Page changed, stopping video playback for page $currentPageIndex")
-            viewModel.stopVideoPlayback()
+            exoPlayer.release()
+        }
+    }
+
+
+    val currentPlayerUrl = videoDetail?.getFirstPlayUrl() ?: videoDetail?.playerUrl
+
+    if (currentPlayerUrl != null) {
+        LaunchedEffect(currentPlayerUrl) {
+            val mediaItem = MediaItem.Builder()
+                .setUri(currentPlayerUrl.toUri())
+                .setMimeType(MimeTypes.APPLICATION_M3U8)
+                .build()
+            exoPlayer.setMediaItem(mediaItem)
+            exoPlayer.prepare()
         }
     }
 
@@ -216,53 +234,33 @@ fun ShortItem(
         )
 
         // 视频播放器（如果有播放 URL 并且允许播放）
-        if (videoDetail?.getFirstPlayUrl() != null || videoDetail?.playerUrl != null) {
+        if (currentPlayerUrl != null) {
             // 在页面中间放置视频播放器
             Box(
                 modifier = Modifier
                     .align(Alignment.Center)
-                    .fillMaxWidth(0.9f) // 占据 90% 宽度
+                    .fillMaxSize()
+                    //.fillMaxWidth(0.9f) // 占据 90% 宽度
                     .aspectRatio(16f/9f) // 16:9 的宽高比
             ) {
                 // 使用 EmbeddedPlayerView 播放视频
                 if (uiState.shouldPlayVideo && uiState.currentShortIndex == currentPageIndex) {
                     // 只在当前页面是活动页面时播放视频
-                    key(videoDetail.id) { // 使用 key 确保在视频变化时重新创建播放器
-                        EmbeddedPlayerView(
-                            url = videoDetail.getFirstPlayUrl() ?: videoDetail.playerUrl ?: "",
-                            title = video.title,
-                            initialPosition = 0L,
-                            initialPlaying = true,
-                            onFullScreenClick = {
-                                // 点击全屏按钮时启动全屏播放器
-                                val intent = Intent(
-                                    context,
-                                    UnifiedPlayerActivity::class.java
-                                ).apply {
-                                    putExtra(
-                                        UnifiedPlayerActivity.EXTRA_VIDEO_URL,
-                                        videoDetail.getFirstPlayUrl() ?: videoDetail.playerUrl ?: ""
-                                    )
-                                    putExtra(
-                                        UnifiedPlayerActivity.EXTRA_FULLSCREEN,
-                                        true
-                                    )
-                                    putExtra(
-                                        UnifiedPlayerActivity.EXTRA_VIDEO_TITLE,
-                                        video.title
-                                    )
-                                    putExtra(
-                                        UnifiedPlayerActivity.EXTRA_POSITION,
-                                        0L
-                                    )
-                                }
-                                context.startActivity(intent)
-                            },
-                            onProgressUpdate = { position, duration ->
-                                // 短视频不需要记录播放位置
-                            },
-                            modifier = Modifier.fillMaxSize()
-                        )
+                    key(videoDetail?.id) { // 使用 key 确保在视频变化时重新创建播放器
+
+                        Box(modifier = Modifier
+                            .fillMaxWidth().aspectRatio(16f/9f)) {
+                            AndroidView(
+                                factory = { ctx ->
+                                    PlayerView(ctx).apply {
+                                        player = exoPlayer
+                                        useController = true
+                                    }
+                                },
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
+
                     }
                 } else {
                     // 显示视频的封面图
@@ -367,3 +365,5 @@ fun ShortItem(
         }
     }
 }
+
+

@@ -80,7 +80,7 @@ fun WatchHistoryItem(
                         "http://192.168.43.175:8083/file/attachments/image/s/${watchHistory.coverUrl}"
                     }
 
-                    Log.d("WatchHistoryItem", "Loading image from URL: $validUrl")
+                    ////Log.d("WatchHistoryItem", "Loading image from URL: $validUrl")
 
                     CachedImage(
                         url = validUrl,

@@ -13,11 +13,13 @@ import com.vlog.app.data.videos.VideoRepository
 import com.vlog.app.data.histories.watch.WatchHistoryRepository
 import com.vlog.app.data.histories.watch.WatchHistory
 import com.vlog.app.data.comments.Comment
+import com.vlog.app.data.videos.PlayItem
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.TreeMap
 
 class VideoDetailViewModel(
     private val videoId: String,
@@ -44,7 +46,7 @@ class VideoDetailViewModel(
 
             if (result.isSuccess) {
                 val videoDetail = result.getOrNull()!!
-                Log.d("VideoDetailViewModel", "Video detail loaded: $videoDetail")
+                ////Log.d("VideoDetailViewModel", "Video detail loaded: $videoDetail")
                 _uiState.update {
                     it.copy(
                         videoDetail = videoDetail,
@@ -71,7 +73,7 @@ class VideoDetailViewModel(
         viewModelScope.launch {
             try {
                 val watchHistory = watchHistoryRepository.getWatchHistoryById(videoId)
-                Log.d("VideoDetailViewModel", "Watch history loaded: $watchHistory")
+                ////Log.d("VideoDetailViewModel", "Watch history loaded: $watchHistory")
 
                 if (watchHistory != null) {
                     _uiState.update {
@@ -100,7 +102,7 @@ class VideoDetailViewModel(
             if (videoDetail != null && videoDetail.isDetail()) {
                 // 从视频详情中获取服务商列表
                 val gathers = videoDetail.getGathers()
-                Log.d("VideoDetailViewModel", "Gathers loaded from video detail: ${gathers.size}")
+                ////Log.d("VideoDetailViewModel", "Gathers loaded from video detail: ${gathers.size}")
 
                 // 获取历史记录中的服务商ID
                 val historyGatherId = uiState.value.watchHistory?.gatherId
@@ -131,7 +133,7 @@ class VideoDetailViewModel(
 
                 if (result.isSuccess) {
                     val gathers = result.getOrNull() ?: emptyList()
-                    Log.d("VideoDetailViewModel", "Gathers loaded from API: ${gathers.size}")
+                    ////Log.d("VideoDetailViewModel", "Gathers loaded from API: ${gathers.size}")
 
                     // 获取历史记录中的服务商ID
                     val historyGatherId = uiState.value.watchHistory?.gatherId
@@ -196,7 +198,7 @@ class VideoDetailViewModel(
                     )
                 }
 
-                Log.d("VideoDetailViewModel", "Players loaded from video detail: ${players.size}")
+                ////Log.d("VideoDetailViewModel", "Players loaded from video detail: ${players.size}")
 
                 // 获取历史记录中的播放地址
                 val historyPlayerUrl = uiState.value.watchHistory?.playerUrl
@@ -214,10 +216,37 @@ class VideoDetailViewModel(
                 val selectedPlayer = players.find { it.playerUrl == selectedPlayerUrl }
                 val gatherName = uiState.value.gathers.find { it.id == gatherId }?.title
 
+//                val playUrlToIndexMap = playList.mapIndexed { index, mapping ->
+//                    mapping.playUrl to index
+//                }.toMap()
+//
+//                val currentIndex = playUrlToIndexMap[selectedPlayerUrl] ?: -1
+//                var previousPlayerUrl: String? = null
+//                var nextPlayerUrl: String? = null
+//                var nextPlayerList: MutableList<String>? = null
+//                if (currentIndex != -1) {
+//                    val currentMapping = playList[currentIndex]
+//
+//                    previousPlayerUrl = if (currentIndex > 0) {
+//                        playList[currentIndex - 1].playUrl
+//                    } else null
+//
+//                    nextPlayerUrl = if (currentIndex < playList.size - 1) {
+//                        playList[currentIndex + 1].playUrl
+//                    } else null
+//
+//                    nextPlayerList = if (currentIndex < playList.size - 1) {
+//                        f
+//
+//                    }
+//                }
+
                 _uiState.update {
                     it.copy(
                         players = players,
                         selectedPlayerUrl = selectedPlayerUrl,
+//                        previousPlayerUrl = previousPlayerUrl,
+//                        nextPlayerUrl = nextPlayerUrl,
                         isLoadingPlayers = false
                     )
                 }
@@ -244,7 +273,7 @@ class VideoDetailViewModel(
 
                 if (result.isSuccess) {
                     val players = result.getOrNull() ?: emptyList()
-                    Log.d("VideoDetailViewModel", "Players loaded from API: ${players.size}")
+                    ////Log.d("VideoDetailViewModel", "Players loaded from API: ${players.size}")
 
                     // 获取历史记录中的播放地址
                     val historyPlayerUrl = uiState.value.watchHistory?.playerUrl
@@ -326,6 +355,7 @@ class VideoDetailViewModel(
         }
     }
 
+
     /**
      * 更新播放进度
      */
@@ -356,7 +386,7 @@ class VideoDetailViewModel(
         viewModelScope.launch {
             try {
                 val comments = commentRepository.getComments(videoId, 0)
-                Log.d("VideoDetailViewModel", "Comments loaded: ${comments.size}")
+                ////Log.d("VideoDetailViewModel", "Comments loaded: ${comments.size}")
 
                 _uiState.update {
                     it.copy(
@@ -409,7 +439,7 @@ class VideoDetailViewModel(
 
             if (result.isSuccess) {
                 val videos = result.getOrNull() ?: emptyList()
-                Log.d("VideoDetailViewModel", "Recommended videos loaded: ${videos.size}")
+                ////Log.d("VideoDetailViewModel", "Recommended videos loaded: ${videos.size}")
 
                 _uiState.update {
                     it.copy(

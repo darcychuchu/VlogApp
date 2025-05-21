@@ -28,9 +28,9 @@ class UserRepository(
      */
     suspend fun checkUserExists(username: String): Result<Boolean> = withContext(Dispatchers.IO) {
         try {
-            Log.d("UserRepository", "Checking if user exists: $username")
+            ////Log.d("UserRepository", "Checking if user exists: $username")
             val response = apiService.checkUserExists(username)
-            Log.d("UserRepository", "Check user exists response: $response")
+            ////Log.d("UserRepository", "Check user exists response: $response")
 
             if (response.code == 0) {
                 Result.success(response.data)
@@ -51,9 +51,9 @@ class UserRepository(
     suspend fun checkNicknameExists(nickname: String): Result<Boolean> =
         withContext(Dispatchers.IO) {
             try {
-                Log.d("UserRepository", "Checking if nickname exists: $nickname")
+                ////Log.d("UserRepository", "Checking if nickname exists: $nickname")
                 val response = apiService.checkNicknameExists(nickname)
-                Log.d("UserRepository", "Check nickname exists response: $response")
+                ////Log.d("UserRepository", "Check nickname exists response: $response")
 
                 if (response.code == 0) {
                     Result.success(response.data)
@@ -75,9 +75,9 @@ class UserRepository(
     suspend fun login(username: String, password: String): Result<User> =
         withContext(Dispatchers.IO) {
             try {
-                Log.d("UserRepository", "Logging in user: $username")
+                ////Log.d("UserRepository", "Logging in user: $username")
                 val response = apiService.login(username, password)
-                Log.d("UserRepository", "Login response: $response")
+                ////Log.d("UserRepository", "Login response: $response")
 
                 if (response.code == 0) {
                     Result.success(response.data)
@@ -100,9 +100,9 @@ class UserRepository(
     suspend fun register(username: String, password: String, nickname: String): Result<User> =
         withContext(Dispatchers.IO) {
             try {
-                Log.d("UserRepository", "Registering user: $username, nickname: $nickname")
+                ////Log.d("UserRepository", "Registering user: $username, nickname: $nickname")
                 val response = apiService.register(username, password, nickname)
-                Log.d("UserRepository", "Register response: $response")
+                ////Log.d("UserRepository", "Register response: $response")
 
                 if (response.code == 0) {
                     Result.success(response.data)
@@ -124,9 +124,9 @@ class UserRepository(
     suspend fun getUserInfo(username: String, token: String): Result<User> =
         withContext(Dispatchers.IO) {
             try {
-                Log.d("UserRepository", "Getting user info: $username")
+                ////Log.d("UserRepository", "Getting user info: $username")
                 val response = apiService.getUserInfo(username, token)
-                Log.d("UserRepository", "Get user info response: $response")
+                ////Log.d("UserRepository", "Get user info response: $response")
 
                 if (response.code == 0) {
                     Result.success(response.data)
@@ -170,7 +170,7 @@ class UserRepository(
                 }
 
                 val response = apiService.updateUserInfo(username, token, nickname, avatarPart)
-                Log.d("UserRepository", "Update user info response: $response")
+                ////Log.d("UserRepository", "Update user info response: $response")
 
                 if (response.code == 0) {
                     Result.success(response.data)

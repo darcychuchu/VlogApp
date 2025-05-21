@@ -1,8 +1,13 @@
 package com.vlog.app.screens.detail
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.content.pm.ActivityInfo
+import android.util.Log
+import android.view.Gravity
+import android.widget.FrameLayout
+import android.widget.TextView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -22,7 +27,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -57,10 +61,20 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.Source
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.media3.common.MediaItem
+import androidx.media3.common.MimeTypes
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.ui.PlayerView
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -70,9 +84,6 @@ import com.vlog.app.data.videos.Player
 import com.vlog.app.data.videos.Video
 import com.vlog.app.screens.components.ErrorView
 import com.vlog.app.screens.components.LoadingView
-import com.vlog.app.screens.player.EmbeddedPlayerView
-import com.vlog.app.screens.player.UnifiedPlayerActivity
-import com.vlog.app.screens.player.VideoPlayerManager
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -85,19 +96,28 @@ fun VideoDetailScreen(
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
     var isFullScreen by remember { mutableStateOf(false) }
+    // 创建 ExoPlayer 实例
+    val exoPlayer = remember {
+        ExoPlayer.Builder(context).build()
+    }
 
-    // 添加全屏状态处理
+    // 处理屏幕方向切换
     LaunchedEffect(isFullScreen) {
-        (context as? Activity)?.let { activity ->
-            if (isFullScreen) {
-                activity.window.addFlags(1024)
-                activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-            } else {
-                activity.window.clearFlags(1024)
-                activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-            }
+        val activity = context as Activity
+        activity.requestedOrientation = if (isFullScreen) {
+            ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+        } else {
+            ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
         }
     }
+
+    // 释放ExoPlayer资源
+    DisposableEffect(Unit) {
+        onDispose {
+            exoPlayer.release()
+        }
+    }
+
 
     // 显示服务商对话框
     if (uiState.showGatherDialog) {
@@ -145,14 +165,46 @@ fun VideoDetailScreen(
         )
     }
 
-    Scaffold(
-        topBar = {
-            if (!isFullScreen) { // 全屏模式下不显示 TopAppBar
+    val videoDetail = uiState.videoDetail
+    val currentPlayerUrl = uiState.selectedPlayerUrl ?: videoDetail?.getFirstPlayUrl() ?: videoDetail?.playerUrl
+    if (videoDetail != null) {
+        LaunchedEffect(currentPlayerUrl) {
+            val mediaItems = mutableListOf<MediaItem>()
+            var currentPlayerIndex = 0
+            if (uiState.players.isNotEmpty()) {
+                uiState.players.forEachIndexed { index, player ->
+                    val mediaItem = MediaItem.Builder()
+                        .setUri(player.playerUrl.toUri())
+                        .setMediaId(player.videoTitle)
+                        //.setTag(player.videoTitle)
+                        .build()
+                    mediaItems.add(mediaItem)
+                    if (player.playerUrl == currentPlayerUrl) {
+                        currentPlayerIndex = index
+                    }
+                }
+            }
+            exoPlayer.setMediaItems(mediaItems)
+            exoPlayer.seekTo(currentPlayerIndex, 0)
+            exoPlayer.prepare()
+        }
+    }
+
+    if (isFullScreen) {
+        // 全屏模式下只显示播放器
+        VideoPlayer(
+            exoPlayer = exoPlayer,
+            isFullScreen = isFullScreen,
+            onFullScreenChange = { newValue -> isFullScreen = newValue }
+        )
+    } else {
+        Scaffold(
+            topBar = {
                 TopAppBar(
                     title = { Text(text = uiState.videoDetail?.title ?: stringResource(R.string.video_detail)) },
                     navigationIcon = {
                         IconButton(onClick = { navController.popBackStack() }) {
-                            Icon(Icons.Filled.ArrowBackIosNew, contentDescription = stringResource(R.string.back))
+                            Icon(Icons.Filled.Home, contentDescription = stringResource(R.string.back))
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
@@ -161,273 +213,145 @@ fun VideoDetailScreen(
                     )
                 )
             }
-        }
-    ) { paddingValues ->
-        Box(modifier = Modifier
-            .fillMaxSize()
-            .padding(paddingValues)
-        ) {
-            when {
-                uiState.isLoading -> {
-                    LoadingView(modifier = Modifier.padding(paddingValues))
-                }
-                uiState.error != null -> {
-                    ErrorView(
-                        message = uiState.error ?: stringResource(R.string.loading_error),
-                        onRetry = { viewModel.loadVideoDetail() },
-                        modifier = Modifier.padding(paddingValues)
-                    )
-                }
-                uiState.videoDetail != null -> {
-                    val videoDetail = uiState.videoDetail!!
+        ) { paddingValues ->
+            Box(modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+            ) {
+                when {
+                    uiState.isLoading -> {
+                        LoadingView(modifier = Modifier.padding(paddingValues))
+                    }
+                    uiState.error != null -> {
+                        ErrorView(
+                            message = uiState.error ?: stringResource(R.string.loading_error),
+                            onRetry = { viewModel.loadVideoDetail() },
+                            modifier = Modifier.padding(paddingValues)
+                        )
+                    }
+                    uiState.videoDetail != null -> {
 
-                    // 获取当前要播放的 URL
-                    val currentPlayerUrl = uiState.selectedPlayerUrl ?: videoDetail.getFirstPlayUrl() ?: videoDetail.playerUrl
 
-                    // 主内容
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .verticalScroll(rememberScrollState())
-                    ) {
-                        // 视频播放器区域
-                        if (currentPlayerUrl != null) {
-                            // 有播放地址时显示内嵌播放器
+
+                        // 主内容
+                        Column(
+                            modifier = Modifier.fillMaxSize()
+                        ) {
                             Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .aspectRatio(16f/9f)
+                                modifier = Modifier.fillMaxWidth()
                             ) {
                                 key(currentPlayerUrl) {
-                                    EmbeddedPlayerView(
-                                        url = currentPlayerUrl,
-                                        title = uiState.videoDetail?.title ?: "",
-                                        initialPosition = if (currentPlayerUrl == VideoPlayerManager.currentUrl.value) {
-                                            VideoPlayerManager.currentPosition.value
-                                        } else if (currentPlayerUrl == uiState.watchHistory?.playerUrl) {
-                                            // 如果是历史记录中的播放地址，使用历史记录中的播放位置
-                                            uiState.lastPlayedPosition
-                                        } else {
-                                            0L
-                                        },
-                                        initialPlaying = VideoPlayerManager.isPlaying.value,
-                                        onFullScreenClick = {
-                                            // 点击全屏按钮时启动全屏播放器
-                                            val intent = Intent(
-                                                context,
-                                                UnifiedPlayerActivity::class.java
-                                            ).apply {
-                                                putExtra(
-                                                    UnifiedPlayerActivity.Companion.EXTRA_VIDEO_URL,
-                                                    currentPlayerUrl
-                                                )
-                                                putExtra(
-                                                    UnifiedPlayerActivity.Companion.EXTRA_FULLSCREEN,
-                                                    true
-                                                )
-                                                putExtra(
-                                                    UnifiedPlayerActivity.Companion.EXTRA_VIDEO_TITLE,
-                                                    uiState.videoDetail?.title ?: ""
-                                                )
-                                                putExtra(
-                                                    UnifiedPlayerActivity.Companion.EXTRA_POSITION,
-                                                    VideoPlayerManager.currentPosition.value
-                                                )
-                                                // 如果是历史记录中的播放地址，传递历史记录中的播放位置
-                                                if (currentPlayerUrl == uiState.watchHistory?.playerUrl && VideoPlayerManager.currentPosition.value == 0L) {
-                                                    putExtra(
-                                                        UnifiedPlayerActivity.Companion.EXTRA_POSITION,
-                                                        uiState.lastPlayedPosition
-                                                    )
-                                                }
-                                            }
-                                            context.startActivity(intent)
-                                        },
-                                        onProgressUpdate = { position, duration ->
-                                            viewModel.updatePlayProgress(position, duration)
-                                        },
-                                        modifier = Modifier.fillMaxSize()
+                                    // 视频播放器
+                                    VideoPlayer(
+                                        exoPlayer = exoPlayer,
+                                        isFullScreen = isFullScreen,
+                                        onFullScreenChange = { newValue -> isFullScreen = newValue }
                                     )
                                 }
+
+
                             }
-                        } else {
-                            // 没有播放地址时显示封面图
-                            Box(
+
+
+                            // 播放控制区域
+                            Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .aspectRatio(16f/9f)
-                                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                // 显示视频封面
-                                AsyncImage(
-                                    model = ImageRequest.Builder(context)
-                                        .data(videoDetail.coverUrl ?: if (videoDetail.cover.isNotEmpty()) ApiConstants.IMAGE_BASE_URL + videoDetail.cover else null)
-                                        .crossfade(true)
-                                        .build(),
-                                    contentDescription = videoDetail.title,
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentScale = ContentScale.Crop
-                                )
-
-                                // 播放按钮
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .background(Color.Black.copy(alpha = 0.3f)),
-                                    contentAlignment = Alignment.Center
+                                // 左侧：详情/评论切换
+                                TabRow(
+                                    selectedTabIndex = uiState.selectedTab,
+                                    modifier = Modifier.weight(1f)
                                 ) {
-                                    if (uiState.selectedGatherId == null) {
-                                        // 提示选择服务商
-                                        Column(
-                                            horizontalAlignment = Alignment.CenterHorizontally
-                                        ) {
-                                            Text(
-                                                text = "请选择视频来源和剧集",
-                                                style = MaterialTheme.typography.bodyLarge,
-                                                color = Color.White
-                                            )
-                                            Spacer(modifier = Modifier.height(8.dp))
-                                            Button(
-                                                onClick = { viewModel.showGatherAndPlayerDialog() },
-                                                colors = ButtonDefaults.buttonColors(
-                                                    containerColor = MaterialTheme.colorScheme.primary
-                                                )
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Source,
-                                                    contentDescription = null,
-                                                    modifier = Modifier.size(16.dp)
-                                                )
-                                                Spacer(modifier = Modifier.width(4.dp))
-                                                Text("选择视频来源/剧集")
+                                    Tab(
+                                        selected = uiState.selectedTab == 0,
+                                        onClick = { viewModel.selectTab(0) },
+                                        text = { Text("详情") }
+                                    )
+                                    Tab(
+                                        selected = uiState.selectedTab == 1,
+                                        onClick = { viewModel.selectTab(1) },
+                                        text = { Text("评论 (${uiState.comments.size})") }
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.width(8.dp))
+
+                                // 线路和选集整合按钮
+                                Button(
+                                    onClick = { viewModel.showGatherAndPlayerDialog() },
+                                    modifier = Modifier.wrapContentWidth()
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.List,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("选集/线路")
+                                }
+                            }
+
+                            // 内容区域：详情或评论
+                            when (uiState.selectedTab) {
+                                0 -> {
+                                    // 详情
+                                    VideoDetailContent(videoDetail = videoDetail!!)
+
+                                    // 当前服务商的播放列表
+                                    if (uiState.players.isNotEmpty()) {
+                                        CurrentPlaylist(
+                                            players = uiState.players,
+                                            selectedPlayerUrl = uiState.selectedPlayerUrl,
+                                            gatherName = uiState.gathers.find { it.id == uiState.selectedGatherId }?.title,
+                                            onPlayerSelected = { playerUrl, playerTitle ->
+                                                viewModel.selectPlayerUrl(playerUrl, playerTitle)
                                             }
-                                        }
-                                    } else {
-                                        // 提示选择剧集
-                                        Column(
-                                            horizontalAlignment = Alignment.CenterHorizontally
-                                        ) {
-                                            Text(
-                                                text = "请选择一集视频播放",
-                                                style = MaterialTheme.typography.bodyLarge,
-                                                color = Color.White
-                                            )
-                                            Spacer(modifier = Modifier.height(8.dp))
-                                            Button(
-                                                onClick = { viewModel.showGatherAndPlayerDialog() },
-                                                colors = ButtonDefaults.buttonColors(
-                                                    containerColor = MaterialTheme.colorScheme.primary
-                                                )
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.AutoMirrored.Filled.List,
-                                                    contentDescription = null,
-                                                    modifier = Modifier.size(16.dp)
-                                                )
-                                                Spacer(modifier = Modifier.width(4.dp))
-                                                Text("选择剧集/线路")
+                                        )
+                                    }
+                                }
+                                1 -> {
+                                    // 评论
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(400.dp) // 固定高度防止无限约束
+                                    ) {
+                                        CommentSection(
+                                            comments = uiState.comments,
+                                            isLoading = uiState.isLoadingComments,
+                                            onPostComment = { content ->
+                                                viewModel.postComment(content)
                                             }
-                                        }
+                                        )
                                     }
                                 }
                             }
-                        }
 
-                        // 播放控制区域
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            // 左侧：详情/评论切换
-                            TabRow(
-                                selectedTabIndex = uiState.selectedTab,
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Tab(
-                                    selected = uiState.selectedTab == 0,
-                                    onClick = { viewModel.selectTab(0) },
-                                    text = { Text("详情") }
-                                )
-                                Tab(
-                                    selected = uiState.selectedTab == 1,
-                                    onClick = { viewModel.selectTab(1) },
-                                    text = { Text("评论 (${uiState.comments.size})") }
-                                )
-                            }
-
-                            Spacer(modifier = Modifier.width(8.dp))
-
-                            // 线路和选集整合按钮
-                            Button(
-                                onClick = { viewModel.showGatherAndPlayerDialog() },
-                                modifier = Modifier.wrapContentWidth()
-                            ) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.List,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("选集/线路")
-                            }
-                        }
-
-                        // 内容区域：详情或评论
-                        when (uiState.selectedTab) {
-                            0 -> {
-                                // 详情
-                                VideoDetailContent(videoDetail = videoDetail)
-
-                                // 当前服务商的播放列表
-                                if (uiState.players.isNotEmpty()) {
-                                    CurrentPlaylist(
-                                        players = uiState.players,
-                                        selectedPlayerUrl = uiState.selectedPlayerUrl,
-                                        gatherName = uiState.gathers.find { it.id == uiState.selectedGatherId }?.title,
-                                        onPlayerSelected = { playerUrl, playerTitle ->
-                                            viewModel.selectPlayerUrl(playerUrl, playerTitle)
-                                        }
-                                    )
+                            // 推荐视频
+                            RecommendedVideos(
+                                videos = uiState.recommendedVideos,
+                                isLoading = uiState.isLoadingRecommendations,
+                                onVideoClick = { videoId ->
+                                    navController.navigate("video/$videoId")
                                 }
-                            }
-                            1 -> {
-                                // 评论
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(400.dp) // 固定高度防止无限约束
-                                ) {
-                                    CommentSection(
-                                        comments = uiState.comments,
-                                        isLoading = uiState.isLoadingComments,
-                                        onPostComment = { content ->
-                                            viewModel.postComment(content)
-                                        }
-                                    )
-                                }
-                            }
+                            )
+
+                            // 底部间距
+                            Spacer(modifier = Modifier.height(16.dp))
                         }
-
-                        // 推荐视频
-                        RecommendedVideos(
-                            videos = uiState.recommendedVideos,
-                            isLoading = uiState.isLoadingRecommendations,
-                            onVideoClick = { videoId ->
-                                navController.navigate("video/$videoId")
-                            }
-                        )
-
-                        // 底部间距
-                        Spacer(modifier = Modifier.height(16.dp))
                     }
                 }
             }
         }
-    }
-}
 
+
+    }
+
+
+}
 
 
 /**
@@ -454,13 +378,11 @@ fun VideoDetailContent(
         Row(
             modifier = Modifier.fillMaxWidth()
         ) {
-            videoDetail.score.let {
-                Text(
-                    text = "评分: $it",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            Text(
+                text = "评分: ${videoDetail.score}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
 
             Spacer(modifier = Modifier.width(16.dp))
 
@@ -578,4 +500,114 @@ fun CurrentPlaylist(
     }
 }
 
+@SuppressLint("SetTextI18n")
+@androidx.annotation.OptIn(UnstableApi::class)
+@Composable
+fun VideoPlayer(
+    exoPlayer: ExoPlayer,
+    isFullScreen: Boolean,
+    onFullScreenChange: (Boolean) -> Unit
+) {
+    // 跟踪当前媒体项ID的状态
+    var currentMediaId by remember { mutableStateOf(exoPlayer.currentMediaItem?.mediaId ?: "未知") }
 
+    // 媒体项变化时的回调
+    val onMediaItemChanged = { id: String ->
+        currentMediaId = id
+    }
+    Box(modifier = Modifier
+        .fillMaxWidth()
+        .then(if (isFullScreen) Modifier.fillMaxSize() else Modifier.aspectRatio(16f/9f))) {
+        AndroidView(
+            factory = { ctx ->
+                PlayerView(ctx).apply {
+                    player = exoPlayer
+                    useController = true
+                    setFullscreenButtonClickListener { onFullScreenChange(!isFullScreen) }
+                    setShowPreviousButton(true)
+                    setShowNextButton(true)
+
+
+
+                    // 添加监听器以便在Compose中更新标题
+                    exoPlayer.addListener(object : androidx.media3.common.Player.Listener {
+                        override fun onMediaItemTransition(mediaItem: androidx.media3.common.MediaItem?, reason: Int) {
+                            // 当媒体项变化时通知Compose更新
+                            onMediaItemChanged(mediaItem?.mediaId ?: "未知")
+                        }
+                    })
+
+//                    // 创建一个TextView并添加到PlayerView
+//                    val titleTextView = TextView(ctx).apply {
+//                        text = "当前播放: ${exoPlayer.currentMediaItem?.mediaId}"
+//                        gravity = Gravity.CENTER
+//                        setPadding(16, 8, 16, 8)
+//                    }
+//
+//                    // 设置TextView的布局参数
+//                    val params = FrameLayout.LayoutParams(
+//                        FrameLayout.LayoutParams.MATCH_PARENT,
+//                        FrameLayout.LayoutParams.WRAP_CONTENT
+//                    ).apply {
+//                        gravity = Gravity.TOP // 放在顶部
+//                    }
+//
+//                    // 添加到PlayerView
+//                    addView(titleTextView, params)
+//
+//
+//                    exoPlayer.addListener(object : androidx.media3.common.Player.Listener {
+//                        override fun onMediaItemTransition(mediaItem: androidx.media3.common.MediaItem?, reason: Int) {
+//                            // 当媒体项变化时更新文本
+//                            titleTextView.text = "当前播放: ${mediaItem?.mediaId ?: "未知"}"
+//                        }
+//
+//                        override fun onPlaybackStateChanged(playbackState: Int) {
+//                            // 当播放状态变化时也更新文本(例如初始加载完成)
+//                            if (playbackState == androidx.media3.common.Player.STATE_READY) {
+//                                titleTextView.text = "当前播放: ${exoPlayer.currentMediaItem?.mediaId ?: "未知"}"
+//                            }
+//                        }
+//                    })
+//
+//                    // 立即更新一次文本(如果ExoPlayer已经加载了媒体项)
+//                    post {
+//                        titleTextView.text = "当前播放: ${exoPlayer.currentMediaItem?.mediaId ?: "未知"}"
+//                    }
+                }
+            },
+            modifier = Modifier.fillMaxSize()
+        )
+
+        // 添加全屏返回按钮
+        if (isFullScreen) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    //.background(Color.Black.copy(alpha = 0.5f)) // 半透明背景
+                    .padding(4.dp)
+                    .align(Alignment.TopStart),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // 返回按钮
+                IconButton(
+                    onClick = { onFullScreenChange(false) }
+                ) {
+                    Icon(
+                        Icons.Default.Home,
+                        contentDescription = "退出全屏",
+                        tint = Color.White
+                    )
+                }
+
+                // 标题文本
+                Text(
+                    text = "当前播放: ${currentMediaId}",
+                    color = Color.White,
+                    modifier = Modifier.padding(start = 4.dp),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+        }
+    }
+}

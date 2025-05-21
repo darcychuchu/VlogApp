@@ -36,7 +36,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             try {
                 // 只从网络获取数据，不使用本地数据
-                Log.d("HomeViewModel", "Loading data from API only")
+                ////Log.d("HomeViewModel", "Loading data from API only")
                 loadDataFromNetwork()
             } catch (e: Exception) {
                 Log.e("HomeViewModel", "Error loading home data: ${e.message}", e)
@@ -56,35 +56,35 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
      */
     private suspend fun loadDataFromNetwork() {
         try {
-            Log.d("HomeViewModel", "Starting to load home data from network")
+            ////Log.d("HomeViewModel", "Starting to load home data from network")
 
             // 从网络获取轮播图数据
-            Log.d("HomeViewModel", "Fetching banners from network")
+            ////Log.d("HomeViewModel", "Fetching banners from network")
             val banners = withContext(Dispatchers.IO) {
                 NetworkModule.apiService.getVideoList(0, 2025, 3).data
             }
-            Log.d("HomeViewModel", "Banners fetched from network, size: ${banners.size}")
+            ////Log.d("HomeViewModel", "Banners fetched from network, size: ${banners.size}")
 
             // 从网络获取推荐电影列表
-            Log.d("HomeViewModel", "Fetching recommended movies from network")
+            ////Log.d("HomeViewModel", "Fetching recommended movies from network")
             val recommendedMovies = withContext(Dispatchers.IO) {
                 NetworkModule.apiService.getVideoList(1, 2025, 3).data
             }
-            Log.d("HomeViewModel", "Recommended movies fetched from network, size: ${recommendedMovies.size}")
+            ////Log.d("HomeViewModel", "Recommended movies fetched from network, size: ${recommendedMovies.size}")
 
             // 从网络获取电视剧列表
-            Log.d("HomeViewModel", "Fetching TV series from network")
+            ////Log.d("HomeViewModel", "Fetching TV series from network")
             val tvSeries = withContext(Dispatchers.IO) {
                 NetworkModule.apiService.getVideoList(2, 0, 3).data
             }
-            Log.d("HomeViewModel", "TV series fetched from network, size: ${tvSeries.size}")
+            ////Log.d("HomeViewModel", "TV series fetched from network, size: ${tvSeries.size}")
 
             // 从网络获取动漫列表
-            Log.d("HomeViewModel", "Fetching anime from network")
+            ////Log.d("HomeViewModel", "Fetching anime from network")
             val comics = withContext(Dispatchers.IO) {
                 NetworkModule.apiService.getVideoList(3, 0, 3).data
             }
-            Log.d("HomeViewModel", "Anime fetched from network, size: ${comics.size}")
+            ////Log.d("HomeViewModel", "Anime fetched from network, size: ${comics.size}")
 
             // 检查数据是否为空
             val isDataEmpty = banners.isEmpty() &&
@@ -94,13 +94,13 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
             if (isDataEmpty) {
                 // 网络数据为空，尝试从本地加载
-                Log.d("HomeViewModel", "Network data is empty, trying to load from local")
+                ////Log.d("HomeViewModel", "Network data is empty, trying to load from local")
                 loadDataFromLocal()
                 return
             }
 
             // 保存到本地
-            Log.d("HomeViewModel", "Saving network data to local database")
+            ////Log.d("HomeViewModel", "Saving network data to local database")
             videoLocalRepository.saveHomeData(
                 VideoLocalRepository.HomeData(
                     banners = banners.take(5),
@@ -111,7 +111,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             )
 
             // 更新 UI
-            Log.d("HomeViewModel", "Updating UI with network data")
+            ////Log.d("HomeViewModel", "Updating UI with network data")
             _uiState.update {
                 it.copy(
                     banners = banners.take(5),
@@ -133,9 +133,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
      * 从本地加载数据
      */
     private suspend fun loadDataFromLocal() {
-        Log.d("HomeViewModel", "Loading data from local database")
+        ////Log.d("HomeViewModel", "Loading data from local database")
         val localData = videoLocalRepository.getLocalHomeData()
-        Log.d("HomeViewModel", "Local data loaded - banners: ${localData.banners.size}, movies: ${localData.recommendedMovies.size}, tv: ${localData.tvSeries.size}, comics: ${localData.comics.size}")
+        ////Log.d("HomeViewModel", "Local data loaded - banners: ${localData.banners.size}, movies: ${localData.recommendedMovies.size}, tv: ${localData.tvSeries.size}, comics: ${localData.comics.size}")
 
         // 检查本地数据是否为空
         val isLocalDataEmpty = localData.banners.isEmpty() &&
@@ -145,7 +145,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
         if (isLocalDataEmpty) {
             // 本地数据为空，显示错误
-            Log.d("HomeViewModel", "Local data is empty, showing error")
+            ////Log.d("HomeViewModel", "Local data is empty, showing error")
             _uiState.update {
                 it.copy(
                     isLoading = false,
@@ -156,7 +156,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         // 更新 UI
-        Log.d("HomeViewModel", "Updating UI with local data")
+        ////Log.d("HomeViewModel", "Updating UI with local data")
         _uiState.update {
             it.copy(
                 banners = localData.banners,

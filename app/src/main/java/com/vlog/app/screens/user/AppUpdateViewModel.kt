@@ -60,8 +60,8 @@ class AppUpdateViewModel(
                             lastPromptTime == 0L  // 如果上次提示时间为0，表示用户手动检查
                         )
 
-                        Log.d("AppUpdateViewModel", "Update check: needUpdate=$needUpdate, forceUpdate=${appVersion.forceUpdate}, "
-                            + "timeSinceLastPrompt=${(currentTime - lastPromptTime) / (60 * 60 * 1000)}h, lastPromptTime=$lastPromptTime, showDialog=$showDialog")
+//                        ////Log.d("AppUpdateViewModel", "Update check: needUpdate=$needUpdate, forceUpdate=${appVersion.forceUpdate}, "
+//                            + "timeSinceLastPrompt=${(currentTime - lastPromptTime) / (60 * 60 * 1000)}h, lastPromptTime=$lastPromptTime, showDialog=$showDialog")
 
                         _uiState.update {
                             it.copy(
@@ -76,7 +76,7 @@ class AppUpdateViewModel(
                         }
                     },
                     onFailure = { e ->
-                        Log.e("AppUpdateViewModel", "Error checking update", e)
+                        //Log.e("AppUpdateViewModel", "Error checking update", e)
                         _uiState.update {
                             it.copy(
                                 isLoading = false,
@@ -116,7 +116,7 @@ class AppUpdateViewModel(
             it.copy(lastPromptTime = 0)
         }
 
-        Log.d("AppUpdateViewModel", "Postpone settings cleared. Will check for updates immediately.")
+        ////Log.d("AppUpdateViewModel", "Postpone settings cleared. Will check for updates immediately.")
     }
 
     /**
@@ -142,6 +142,6 @@ class AppUpdateViewModel(
             )
         }
 
-        Log.d("AppUpdateViewModel", "Update postponed for 24 hours. Next prompt after: ${currentTime + 24 * 60 * 60 * 1000}")
+        ////Log.d("AppUpdateViewModel", "Update postponed for 24 hours. Next prompt after: ${currentTime + 24 * 60 * 60 * 1000}")
     }
 }

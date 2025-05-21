@@ -15,10 +15,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Update
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -45,6 +43,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import com.vlog.app.screens.components.CommonTopBar
 import android.util.Log
+import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.vlog.app.data.api.ApiClient
 import com.vlog.app.screens.components.UpdateDialog
@@ -86,7 +86,7 @@ fun UserScreen(
         val currentTime = System.currentTimeMillis()
         val timeSinceLastPrompt = currentTime - lastPromptTime
 
-        Log.d("UserScreen", "Time since last update prompt: ${timeSinceLastPrompt / (60 * 60 * 1000)}h")
+        ////Log.d("UserScreen", "Time since last update prompt: ${timeSinceLastPrompt / (60 * 60 * 1000)}h")
 
         // 检查更新
         appUpdateViewModel.checkUpdate(appUpdateManager)
@@ -126,16 +126,16 @@ fun UserScreen(
             onUsernameChange = userViewModel::updateLoginUsername,
             onPasswordChange = userViewModel::updateLoginPassword,
             onLogin = {
-                Log.d("UserScreen", "Login button clicked")
+                ////Log.d("UserScreen", "Login button clicked")
                 userViewModel.login()
             },
             onRegister = {
-                Log.d("UserScreen", "Switch to register form")
+                ////Log.d("UserScreen", "Switch to register form")
                 userViewModel.hideLoginForm()
                 userViewModel.showRegisterForm()
             },
             onDismiss = {
-                Log.d("UserScreen", "Login form dismissed")
+                ////Log.d("UserScreen", "Login form dismissed")
                 userViewModel.hideLoginForm()
             }
         )
@@ -156,16 +156,16 @@ fun UserScreen(
             onPasswordChange = userViewModel::updateRegisterPassword,
             onNicknameChange = userViewModel::updateRegisterNickname,
             onRegister = {
-                Log.d("UserScreen", "Register button clicked")
+                ////Log.d("UserScreen", "Register button clicked")
                 userViewModel.register()
             },
             onLogin = {
-                Log.d("UserScreen", "Switch to login form")
+                ////Log.d("UserScreen", "Switch to login form")
                 userViewModel.hideRegisterForm()
                 userViewModel.showLoginForm()
             },
             onDismiss = {
-                Log.d("UserScreen", "Register form dismissed")
+                ////Log.d("UserScreen", "Register form dismissed")
                 userViewModel.hideRegisterForm()
             }
         )
@@ -184,11 +184,11 @@ fun UserScreen(
             onNicknameChange = userViewModel::updateEditNickname,
             onAvatarSelected = userViewModel::updateSelectedAvatar,
             onSave = {
-                Log.d("UserScreen", "Save profile button clicked")
+                ////Log.d("UserScreen", "Save profile button clicked")
                 userViewModel.updateUserProfile()
             },
             onDismiss = {
-                Log.d("UserScreen", "Profile edit form dismissed")
+                ////Log.d("UserScreen", "Profile edit form dismissed")
                 userViewModel.hideProfileEdit()
             }
         )
@@ -233,7 +233,7 @@ fun UserScreen(
 
             // 观看历史
             FunctionItem(
-                icon = Icons.Default.History,
+                icon = Icons.Default.CheckCircle,
                 title = "观看历史",
                 onClick = { navController.navigate("watch_history") }
             )
@@ -251,7 +251,7 @@ fun UserScreen(
 
             // 检查更新
             FunctionItem(
-                icon = Icons.Default.Update,
+                icon = Icons.Default.Build,
                 title = "检查更新",
                 badge = if (appUpdateUiState.hasNewVersion) {
                     {
@@ -280,7 +280,7 @@ fun UserScreen(
                     // 显示更新对话框
                     appUpdateViewModel.showUpdateDialog()
 
-                    Log.d("UserScreen", "Manual update check initiated by user")
+                    ////Log.d("UserScreen", "Manual update check initiated by user")
                 }
             )
 

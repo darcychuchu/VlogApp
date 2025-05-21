@@ -12,7 +12,6 @@ import androidx.navigation.navArgument
 import com.vlog.app.screens.detail.VideoDetailScreen
 import com.vlog.app.screens.filter.FilterScreen
 import com.vlog.app.screens.home.HomeScreen
-import com.vlog.app.screens.player.FullPlayerScreen
 import com.vlog.app.screens.search.SearchScreen
 import com.vlog.app.screens.shorts.ShortsScreen
 import com.vlog.app.screens.user.UserScreen
@@ -134,10 +133,6 @@ private fun NavGraphBuilder.addFullScreenRoutes(navController: NavHostController
         val decodedUrl = java.net.URLDecoder.decode(url, "UTF-8")
         val decodedTitle = java.net.URLDecoder.decode(title, "UTF-8")
 
-        FullPlayerScreen(
-            videoUrl = decodedUrl,
-            onBackClick = { navController.popBackStack() }
-        )
     }
 }
 

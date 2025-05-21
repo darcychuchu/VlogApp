@@ -13,15 +13,14 @@ android {
         applicationId = "com.vlog.app"
         minSdk = 29
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
-
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        versionCode = 2
+        versionName = "1.0.5"
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true  // 改为true启用代码优化 ，打包apk
+            isShrinkResources = true  // 添加这行启用资源压缩 ，打包apk
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -43,27 +42,26 @@ android {
 dependencies {
 
     implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.appcompat)
     implementation(libs.androidx.lifecycle.runtime)
-    implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
-    implementation(libs.androidx.compose.ui.graphics)
-    implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
-    implementation(libs.androidx.compose.materialWindow)
-    implementation(libs.androidx.compose.materialWindow)
-    implementation(libs.androidx.compose.material.iconsExtended)
+    //implementation(libs.androidx.appcompat)
+    //implementation(libs.androidx.lifecycle.runtime.compose)
+    //implementation(libs.androidx.compose.ui.graphics)
+    //implementation(libs.androidx.compose.ui.tooling.preview)
+    //implementation(libs.androidx.compose.materialWindow)
+    //implementation(libs.androidx.compose.material.iconsExtended)
 
 
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.test.ext.junit)
-    androidTestImplementation(libs.androidx.test.espresso.core)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
-    debugImplementation(libs.androidx.compose.ui.tooling)
-    debugImplementation(libs.androidx.compose.ui.test.manifest)
+//    testImplementation(libs.junit)
+//    androidTestImplementation(libs.androidx.test.ext.junit)
+//    androidTestImplementation(libs.androidx.test.espresso.core)
+//    androidTestImplementation(platform(libs.androidx.compose.bom))
+//    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+//    debugImplementation(libs.androidx.compose.ui.tooling)
+//    debugImplementation(libs.androidx.compose.ui.test.manifest)
 
 
     // navigation
@@ -87,13 +85,13 @@ dependencies {
     // Gson
     //implementation("com.google.code.gson:gson:2.10.1")
     // browser
-    implementation(libs.androidx.browser)
+    //implementation(libs.androidx.browser)
     // jsoup
-    implementation(libs.jsoup.jsoup)
+    //implementation(libs.jsoup.jsoup)
     // media3
-    implementation(libs.androidx.media3.session)
+    //implementation(libs.androidx.media3.session)
     implementation(libs.androidx.media3.exoplayer)
-    implementation(libs.androidx.media3.exoplayer.dash)
+    //implementation(libs.androidx.media3.exoplayer.dash)
     implementation(libs.androidx.media3.exoplayer.hls)
     implementation(libs.androidx.media3.ui)
 }

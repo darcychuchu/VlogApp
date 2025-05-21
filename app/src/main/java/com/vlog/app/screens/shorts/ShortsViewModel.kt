@@ -42,7 +42,7 @@ class ShortsViewModel(application: Application) : AndroidViewModel(application) 
      */
     fun stopVideoPlayback() {
         _uiState.update { it.copy(shouldPlayVideo = false) }
-        Log.d("ShortsViewModel", "Video playback stopped")
+        ////Log.d("ShortsViewModel", "Video playback stopped")
     }
 
     /**
@@ -67,7 +67,7 @@ class ShortsViewModel(application: Application) : AndroidViewModel(application) 
 
         // 如果滚动到距离列表末尾 PRELOAD_THRESHOLD 个项目，则自动加载更多
         if (page >= shorts.size - PRELOAD_THRESHOLD && _uiState.value.canLoadMore && !_uiState.value.isLoadingMore) {
-            Log.d("ShortsViewModel", "Triggering loadMoreShorts at page $page, list size: ${shorts.size}")
+            ////Log.d("ShortsViewModel", "Triggering loadMoreShorts at page $page, list size: ${shorts.size}")
             loadMoreShorts()
         }
     }
@@ -193,11 +193,11 @@ class ShortsViewModel(application: Application) : AndroidViewModel(application) 
     fun loadMoreShorts() {
         // 如果已经在加载中或者不能加载更多，则直接返回
         if (_uiState.value.isLoadingMore || !_uiState.value.canLoadMore) {
-            Log.d("ShortsViewModel", "Skip loadMoreShorts: isLoadingMore=${_uiState.value.isLoadingMore}, canLoadMore=${_uiState.value.canLoadMore}")
+            ////Log.d("ShortsViewModel", "Skip loadMoreShorts: isLoadingMore=${_uiState.value.isLoadingMore}, canLoadMore=${_uiState.value.canLoadMore}")
             return
         }
 
-        Log.d("ShortsViewModel", "Starting loadMoreShorts, current page: ${_uiState.value.currentPage}")
+        ////Log.d("ShortsViewModel", "Starting loadMoreShorts, current page: ${_uiState.value.currentPage}")
 
         _uiState.update { it.copy(isLoadingMore = true) }
 
@@ -208,7 +208,7 @@ class ShortsViewModel(application: Application) : AndroidViewModel(application) 
                 // 加载下一页数据
                 val newShorts = videoLocalRepository.loadMoreShorts(nextPage)
 
-                Log.d("ShortsViewModel", "Loaded page $nextPage, got ${newShorts.size} new items")
+                ////Log.d("ShortsViewModel", "Loaded page $nextPage, got ${newShorts.size} new items")
 
                 _uiState.update {
                     it.copy(
@@ -219,7 +219,7 @@ class ShortsViewModel(application: Application) : AndroidViewModel(application) 
                     )
                 }
 
-                Log.d("ShortsViewModel", "After update: total items=${_uiState.value.shorts.size}, currentPage=${_uiState.value.currentPage}, canLoadMore=${_uiState.value.canLoadMore}")
+                ////Log.d("ShortsViewModel", "After update: total items=${_uiState.value.shorts.size}, currentPage=${_uiState.value.currentPage}, canLoadMore=${_uiState.value.canLoadMore}")
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
@@ -253,7 +253,7 @@ class ShortsViewModel(application: Application) : AndroidViewModel(application) 
                     )
                 }
 
-                Log.d("ShortsViewModel", "Video detail loaded, shouldPlayVideo=$isCurrentPage, currentIndex=${_uiState.value.currentShortIndex}, pageIndex=$currentPageIndex")
+                ////Log.d("ShortsViewModel", "Video detail loaded, shouldPlayVideo=$isCurrentPage, currentIndex=${_uiState.value.currentShortIndex}, pageIndex=$currentPageIndex")
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
@@ -282,5 +282,5 @@ data class ShortsUiState(
     val error: String? = null,
     val shouldPlayVideo: Boolean = false, // 控制是否应该播放视频
     val currentPage: Int = 1, // 当前页码
-    val canLoadMore: Boolean = true // 是否可以加载更多数据
+    val canLoadMore: Boolean = true, // 是否可以加载更多数据
 )

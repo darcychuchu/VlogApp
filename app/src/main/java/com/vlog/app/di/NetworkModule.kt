@@ -21,7 +21,7 @@ object NetworkModule {
     lateinit var moshi: Moshi
     lateinit var retrofit: Retrofit
 
-    val provideAuthInterceptor =  Interceptor { chain: Interceptor.Chain ->
+    private val provideAuthInterceptor =  Interceptor { chain: Interceptor.Chain ->
         val initialRequest = chain.request()
         val newUrl = initialRequest.url.newBuilder()
             .addQueryParameter("app_version", APP_VERSION)

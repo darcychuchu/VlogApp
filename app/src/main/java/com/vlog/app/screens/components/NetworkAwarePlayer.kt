@@ -43,13 +43,13 @@ fun NetworkAwarePlayer(
                 }
 
                 if (newNetworkType != currentNetworkType) {
-                    Log.d("NetworkAwarePlayer", "Network type changed from $currentNetworkType to $newNetworkType")
+                    ////Log.d("NetworkAwarePlayer", "Network type changed from $currentNetworkType to $newNetworkType")
                     currentNetworkType = newNetworkType
                 }
             }
 
             override fun onLost(network: Network) {
-                Log.d("NetworkAwarePlayer", "Network lost")
+                ////Log.d("NetworkAwarePlayer", "Network lost")
                 currentNetworkType = NetworkOptimizer.NetworkType.NONE
             }
         }
@@ -68,15 +68,15 @@ fun NetworkAwarePlayer(
     // 根据网络类型调整视频质量
     val videoQuality = when (currentNetworkType) {
         NetworkOptimizer.NetworkType.WIFI, NetworkOptimizer.NetworkType.ETHERNET -> {
-            Log.d("NetworkAwarePlayer", "Using high quality for WiFi/Ethernet")
+            ////Log.d("NetworkAwarePlayer", "Using high quality for WiFi/Ethernet")
             VideoQuality.HIGH
         }
         NetworkOptimizer.NetworkType.CELLULAR -> {
-            Log.d("NetworkAwarePlayer", "Using medium quality for cellular")
+            ////Log.d("NetworkAwarePlayer", "Using medium quality for cellular")
             VideoQuality.MEDIUM
         }
         NetworkOptimizer.NetworkType.NONE -> {
-            Log.d("NetworkAwarePlayer", "Using low quality for no network")
+            ////Log.d("NetworkAwarePlayer", "Using low quality for no network")
             VideoQuality.LOW
         }
     }

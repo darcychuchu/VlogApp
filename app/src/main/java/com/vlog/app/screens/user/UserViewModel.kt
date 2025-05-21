@@ -163,29 +163,29 @@ class UserViewModel(
         val username = uiState.value.loginUsername
         val password = uiState.value.loginPassword
 
-        Log.d("UserViewModel", "Login attempt with username: $username")
+        ////Log.d("UserViewModel", "Login attempt with username: $username")
 
         // 验证输入
         if (username.isBlank()) {
             _uiState.update { it.copy(usernameError = "用户名不能为空") }
-            Log.d("UserViewModel", "Login validation failed: username is blank")
+            ////Log.d("UserViewModel", "Login validation failed: username is blank")
             return
         }
         if (password.isBlank()) {
             _uiState.update { it.copy(passwordError = "密码不能为空") }
-            Log.d("UserViewModel", "Login validation failed: password is blank")
+            ////Log.d("UserViewModel", "Login validation failed: password is blank")
             return
         }
 
         _uiState.update { it.copy(isLoading = true, error = null) }
-        Log.d("UserViewModel", "Login validation passed, attempting login...")
+        ////Log.d("UserViewModel", "Login validation passed, attempting login...")
 
         viewModelScope.launch {
             try {
                 userRepository.login(username, password).fold(
                     onSuccess = { user ->
                         // 保存用户信息
-                        Log.d("UserViewModel", "Login successful for user: ${user.name}")
+                        ////Log.d("UserViewModel", "Login successful for user: ${user.name}")
                         userPreferences.saveUser(user)
 
                         _uiState.update {
@@ -229,27 +229,27 @@ class UserViewModel(
         val password = uiState.value.registerPassword
         val nickname = uiState.value.registerNickname
 
-        Log.d("UserViewModel", "Register attempt with username: $username, nickname: $nickname")
+        ////Log.d("UserViewModel", "Register attempt with username: $username, nickname: $nickname")
 
         // 验证输入
         if (username.isBlank()) {
             _uiState.update { it.copy(usernameError = "用户名不能为空") }
-            Log.d("UserViewModel", "Register validation failed: username is blank")
+            ////Log.d("UserViewModel", "Register validation failed: username is blank")
             return
         }
         if (password.isBlank()) {
             _uiState.update { it.copy(passwordError = "密码不能为空") }
-            Log.d("UserViewModel", "Register validation failed: password is blank")
+            ////Log.d("UserViewModel", "Register validation failed: password is blank")
             return
         }
         if (nickname.isBlank()) {
             _uiState.update { it.copy(nicknameError = "昵称不能为空") }
-            Log.d("UserViewModel", "Register validation failed: nickname is blank")
+            ////Log.d("UserViewModel", "Register validation failed: nickname is blank")
             return
         }
 
         _uiState.update { it.copy(isLoading = true, error = null) }
-        Log.d("UserViewModel", "Register validation passed, checking if username exists...")
+        ////Log.d("UserViewModel", "Register validation passed, checking if username exists...")
 
         viewModelScope.launch {
             try {
@@ -257,7 +257,7 @@ class UserViewModel(
                 userRepository.checkUserExists(username).fold(
                     onSuccess = { exists ->
                         if (exists) {
-                            Log.d("UserViewModel", "Username already exists: $username")
+                            ////Log.d("UserViewModel", "Username already exists: $username")
                             _uiState.update {
                                 it.copy(
                                     isLoading = false,
@@ -266,7 +266,7 @@ class UserViewModel(
                             }
                         } else {
                             // 用户名不存在，可以注册
-                            Log.d("UserViewModel", "Username available, proceeding with registration")
+                            ////Log.d("UserViewModel", "Username available, proceeding with registration")
                             registerUser(username, password, nickname)
                         }
                     },
@@ -296,11 +296,11 @@ class UserViewModel(
      * 注册用户
      */
     private suspend fun registerUser(username: String, password: String, nickname: String) {
-        Log.d("UserViewModel", "Registering user: $username, nickname: $nickname")
+        ////Log.d("UserViewModel", "Registering user: $username, nickname: $nickname")
         userRepository.register(username, password, nickname).fold(
             onSuccess = { user ->
                 // 保存用户信息
-                Log.d("UserViewModel", "Registration successful for user: ${user.name}")
+                ////Log.d("UserViewModel", "Registration successful for user: ${user.name}")
                 userPreferences.saveUser(user)
 
                 _uiState.update {

@@ -38,7 +38,7 @@ class CachedImageInterceptor(
             val imageTypeStr = headers["X-ImageType"]
             val description = headers["X-Description"]
 
-            Log.d("CachedImageInterceptor", "Headers: $headers, videoId: $videoId, imageType: $imageTypeStr")
+            ////Log.d("CachedImageInterceptor", "Headers: $headers, videoId: $videoId, imageType: $imageTypeStr")
 
             val imageType = if (imageTypeStr != null) {
                 try {
@@ -51,12 +51,12 @@ class CachedImageInterceptor(
                 ImageType.OTHER
             }
 
-            Log.d("CachedImageInterceptor", "Intercepting image request: $url, videoId: $videoId, type: $imageType")
+            ////Log.d("CachedImageInterceptor", "Intercepting image request: $url, videoId: $videoId, type: $imageType")
 
             // 尝试从缓存获取
             val cachedFile = imageCacheRepository.getCachedImageFile(url)
             if (cachedFile != null) {
-                Log.d("CachedImageInterceptor", "Using cached image: $url")
+                ////Log.d("CachedImageInterceptor", "Using cached image: $url")
                 // 使用缓存的图片
                 return SuccessResult(
                     drawable = cachedFile.inputStream().use {
@@ -77,7 +77,7 @@ class CachedImageInterceptor(
                 // 再次检查缓存（可能在等待锁的过程中已被其他线程下载）
                 val cachedFileAfterLock = imageCacheRepository.getCachedImageFile(url)
                 if (cachedFileAfterLock != null) {
-                    Log.d("CachedImageInterceptor", "Using cached image after lock: $url")
+                    ////Log.d("CachedImageInterceptor", "Using cached image after lock: $url")
                     return@withLock SuccessResult(
                         drawable = cachedFileAfterLock.inputStream().use {
                             BitmapFactory.decodeStream(it)
@@ -96,7 +96,7 @@ class CachedImageInterceptor(
                 )
 
                 if (downloadedFile != null) {
-                    Log.d("CachedImageInterceptor", "Downloaded and cached image: $url")
+                    ////Log.d("CachedImageInterceptor", "Downloaded and cached image: $url")
                     return@withLock SuccessResult(
                         drawable = downloadedFile.inputStream().use {
                             BitmapFactory.decodeStream(it)

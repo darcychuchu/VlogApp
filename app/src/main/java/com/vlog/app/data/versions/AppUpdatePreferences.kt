@@ -2,6 +2,7 @@ package com.vlog.app.data.versions
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.core.content.edit
 
 /**
  * 应用更新偏好设置
@@ -17,7 +18,7 @@ class AppUpdatePreferences(context: Context) {
      * 保存上次更新提示时间
      */
     fun saveLastPromptTime(time: Long) {
-        sharedPreferences.edit().putLong(KEY_LAST_PROMPT_TIME, time).apply()
+        sharedPreferences.edit() { putLong(KEY_LAST_PROMPT_TIME, time) }
     }
 
     /**
@@ -31,7 +32,7 @@ class AppUpdatePreferences(context: Context) {
      * 清除上次更新提示时间
      */
     fun clearLastPromptTime() {
-        sharedPreferences.edit().remove(KEY_LAST_PROMPT_TIME).apply()
+        sharedPreferences.edit() { remove(KEY_LAST_PROMPT_TIME) }
     }
 
     companion object {

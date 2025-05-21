@@ -77,7 +77,7 @@ class VlogApp : Application() {
         // Set as default ImageLoader
         Coil.setImageLoader(imageLoader)
 
-        Log.d("VlogApp", "Image cache system initialized")
+        ////Log.d("VlogApp", "Image cache system initialized")
 
         // Initialize repositories
         videoRepository = VideoRepository(apiService)

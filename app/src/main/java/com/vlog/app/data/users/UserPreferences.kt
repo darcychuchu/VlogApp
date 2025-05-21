@@ -2,6 +2,7 @@ package com.vlog.app.data.users
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.core.content.edit
 
 /**
  * 用户偏好设置
@@ -17,7 +18,7 @@ class UserPreferences(context: Context) {
      * 保存用户信息
      */
     fun saveUser(user: User) {
-        sharedPreferences.edit().apply {
+        sharedPreferences.edit() {
             putString(KEY_USER_ID, user.id)
             putString(KEY_USER_NAME, user.name)
             putString(KEY_USER_NICKNAME, user.nickName)
@@ -26,7 +27,7 @@ class UserPreferences(context: Context) {
             putString(KEY_ACCESS_TOKEN, user.accessToken)
             putString(KEY_CREATED_AT, user.createdAt)
             putBoolean(KEY_IS_LOGGED_IN, true)
-        }.apply()
+        }
     }
 
     /**
@@ -58,7 +59,7 @@ class UserPreferences(context: Context) {
      * 清除用户信息（登出）
      */
     fun clearUser() {
-        sharedPreferences.edit().apply {
+        sharedPreferences.edit() {
             remove(KEY_USER_ID)
             remove(KEY_USER_NAME)
             remove(KEY_USER_NICKNAME)
@@ -67,7 +68,7 @@ class UserPreferences(context: Context) {
             remove(KEY_ACCESS_TOKEN)
             remove(KEY_CREATED_AT)
             putBoolean(KEY_IS_LOGGED_IN, false)
-        }.apply()
+        }
     }
 
     companion object {

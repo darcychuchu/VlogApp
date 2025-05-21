@@ -20,7 +20,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Camera
+import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -163,7 +163,7 @@ fun ProfileEditForm(
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Camera,
+                            imageVector = Icons.Default.Face,
                             contentDescription = "选择图片",
                             tint = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.size(20.dp)
