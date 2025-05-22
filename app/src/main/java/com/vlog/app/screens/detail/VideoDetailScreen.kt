@@ -62,8 +62,12 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.PictureInPicture
+import androidx.compose.material.icons.filled.Minimize
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.graphics.Color
@@ -96,6 +100,7 @@ fun VideoDetailScreen(
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
     var isFullScreen by remember { mutableStateOf(false) }
+    var isPipMode by remember { mutableStateOf(false) } // Task 1: Add State Variable
     // 创建 ExoPlayer 实例
     val exoPlayer = remember {
         ExoPlayer.Builder(context).build()
@@ -190,17 +195,163 @@ fun VideoDetailScreen(
         }
     }
 
-    if (isFullScreen) {
-        // 全屏模式下只显示播放器
-        VideoPlayer(
-            exoPlayer = exoPlayer,
-            isFullScreen = isFullScreen,
-            onFullScreenChange = { newValue -> isFullScreen = newValue }
-        )
-    } else {
+    // Task 4a: Conditional Rendering for PIP Mode (Outer Box structure)
+    Box(modifier = Modifier.fillMaxSize()) {
+        // Scaffold is always rendered, but its content and visibility of some parts change.
         Scaffold(
             topBar = {
-                TopAppBar(
+                // Hide TopAppBar if in PIP or FullScreen mode
+                if (!isPipMode && !isFullScreen) {
+                    TopAppBar(
+                        title = { Text(text = uiState.videoDetail?.title ?: stringResource(R.string.video_detail)) },
+                        navigationIcon = {
+                            IconButton(onClick = { navController.popBackStack() }) {
+                                Icon(Icons.Filled.Home, contentDescription = stringResource(R.string.back))
+                            }
+                        },
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    )
+                }
+            }
+        ) { paddingValues -> // This padding is from the Scaffold (e.g., for the TopAppBar)
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    // Apply Scaffold's padding only when the TopAppBar is visible
+                    .padding(if (!isPipMode && !isFullScreen) paddingValues else PaddingValues(0.dp))
+            ) {
+                // Video Player Area: Rendered here if not fullscreen and not PIP
+                if (!isFullScreen && !isPipMode) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        key(currentPlayerUrl) {
+                            VideoPlayer(
+                                exoPlayer = exoPlayer,
+                                isFullScreen = false, // Not fullscreen in this placement
+                                isPipMode = false,    // Not PIP in this placement
+                                onFullScreenChange = { fs ->
+                                    isFullScreen = fs
+                                    if (fs) isPipMode = false
+                                },
+                                onPipModeChange = { pip ->
+                                    isPipMode = pip
+                                    if (pip) isFullScreen = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                // Video Details, Comments, Recommendations etc.
+                // Rendered if not fullscreen (details are hidden in fullscreen).
+                // In PIP mode, these details will be visible behind/below the floating PIP player.
+                if (!isFullScreen) { // Show details if not in full screen.
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        TabRow(
+                            selectedTabIndex = uiState.selectedTab,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Tab(selected = uiState.selectedTab == 0, onClick = { viewModel.selectTab(0) }, text = { Text("详情") })
+                            Tab(selected = uiState.selectedTab == 1, onClick = { viewModel.selectTab(1) }, text = { Text("评论 (${uiState.comments.size})") })
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Button(onClick = { viewModel.showGatherAndPlayerDialog() }, modifier = Modifier.wrapContentWidth()) {
+                            Icon(imageVector = Icons.AutoMirrored.Filled.List, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("选集/线路")
+                        }
+                    }
+                    when (uiState.selectedTab) {
+                        0 -> {
+                            VideoDetailContent(videoDetail = videoDetail!!)
+                            if (uiState.players.isNotEmpty()) {
+                                CurrentPlaylist(
+                                    players = uiState.players,
+                                    selectedPlayerUrl = uiState.selectedPlayerUrl,
+                                    gatherName = uiState.gathers.find { it.id == uiState.selectedGatherId }?.title,
+                                    onPlayerSelected = { playerUrl, playerTitle -> viewModel.selectPlayerUrl(playerUrl, playerTitle) }
+                                )
+                            }
+                        }
+                        1 -> {
+                            Box(modifier = Modifier.fillMaxWidth().height(400.dp)) {
+                                CommentSection(
+                                    comments = uiState.comments,
+                                    isLoading = uiState.isLoadingComments,
+                                    onPostComment = { content -> viewModel.postComment(content) }
+                                )
+                            }
+                        }
+                    }
+                    RecommendedVideos(
+                        videos = uiState.recommendedVideos,
+                        isLoading = uiState.isLoadingRecommendations,
+                        onVideoClick = { videoId -> navController.navigate("video/$videoId") }
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+            }
+
+            // Loading and Error states for the main content (under TopAppBar if shown)
+            // Show only if not in fullscreen and not in PIP to avoid overlap.
+            if (!isFullScreen && !isPipMode) {
+                val currentPadding = if (!isPipMode && !isFullScreen) paddingValues else PaddingValues(0.dp)
+                when {
+                    uiState.isLoading -> LoadingView(modifier = Modifier.fillMaxSize().padding(currentPadding))
+                    uiState.error != null -> ErrorView(
+                        message = uiState.error ?: stringResource(R.string.loading_error),
+                        onRetry = { viewModel.loadVideoDetail() },
+                        modifier = Modifier.fillMaxSize().padding(currentPadding)
+                    )
+                }
+            }
+        }
+
+        // Conditional rendering for FullScreen Player or PIP Player
+        // This is OUTSIDE the Scaffold, directly in the root Box, to overlay correctly.
+        if (isFullScreen && !isPipMode) { // Fullscreen mode
+            VideoPlayer(
+                exoPlayer = exoPlayer,
+                isFullScreen = true,
+                isPipMode = false, // Explicitly false
+                onFullScreenChange = { fs -> isFullScreen = fs /* PIP remains false */ },
+                onPipModeChange = { pip -> // Enter PIP from Fullscreen
+                    isPipMode = pip
+                    if (pip) isFullScreen = false
+                }
+            )
+        } else if (isPipMode) { // PIP mode (floating player)
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp) // Padding from the screen edges for the PIP window
+            ) {
+                VideoPlayer(
+                    exoPlayer = exoPlayer,
+                    isFullScreen = false, // Not traditional fullscreen when in PIP
+                    isPipMode = true,     // Explicitly true
+                    onFullScreenChange = { fs -> // Called by PIP control to return to fullscreen
+                        isFullScreen = fs
+                        if (fs) isPipMode = false // Exit PIP if going fullscreen
+                    },
+                    onPipModeChange = { pip -> // Called by PIP controls (e.g., close button)
+                        isPipMode = pip
+                        if (!pip) isFullScreen = false // If PIP is closed, ensure fullscreen is also off
+                    }
+                )
+            }
+        }
+    }
+}
                     title = { Text(text = uiState.videoDetail?.title ?: stringResource(R.string.video_detail)) },
                     navigationIcon = {
                         IconButton(onClick = { navController.popBackStack() }) {
@@ -245,7 +396,15 @@ fun VideoDetailScreen(
                                     VideoPlayer(
                                         exoPlayer = exoPlayer,
                                         isFullScreen = isFullScreen,
-                                        onFullScreenChange = { newValue -> isFullScreen = newValue }
+                                        isPipMode = isPipMode, // Pass isPipMode
+                                        onFullScreenChange = { fs ->
+                                            isFullScreen = fs
+                                            if (fs) isPipMode = false // Exit PIP if going fullscreen
+                                        },
+                                        onPipModeChange = { pip -> // Lambda to change pip mode
+                                            isPipMode = pip
+                                            if (pip) isFullScreen = false // Exit fullscreen if going PIP
+                                        }
                                     )
                                 }
 
@@ -506,7 +665,9 @@ fun CurrentPlaylist(
 fun VideoPlayer(
     exoPlayer: ExoPlayer,
     isFullScreen: Boolean,
-    onFullScreenChange: (Boolean) -> Unit
+    isPipMode: Boolean, // Task 5: Update VideoPlayer Composable Signature
+    onFullScreenChange: (Boolean) -> Unit,
+    onPipModeChange: (Boolean) -> Unit // Task 5: Update VideoPlayer Composable Signature
 ) {
     // 跟踪当前媒体项ID的状态
     var currentMediaId by remember { mutableStateOf(exoPlayer.currentMediaItem?.mediaId ?: "未知") }
@@ -515,17 +676,34 @@ fun VideoPlayer(
     val onMediaItemChanged = { id: String ->
         currentMediaId = id
     }
-    Box(modifier = Modifier
-        .fillMaxWidth()
-        .then(if (isFullScreen) Modifier.fillMaxSize() else Modifier.aspectRatio(16f/9f))) {
+
+    // Task 5: Modify VideoPlayer's main Box modifier
+    val playerModifier = when {
+        isPipMode -> Modifier.size(200.dp, 112.dp).background(Color.Black) // PIP mode size
+        isFullScreen -> Modifier.fillMaxSize().background(Color.Black)    // Full screen size
+        else -> Modifier.fillMaxWidth().aspectRatio(16f / 9f).background(Color.Black) // Normal size
+    }
+
+    Box(modifier = playerModifier) {
         AndroidView(
             factory = { ctx ->
                 PlayerView(ctx).apply {
                     player = exoPlayer
-                    useController = true
-                    setFullscreenButtonClickListener { onFullScreenChange(!isFullScreen) }
-                    setShowPreviousButton(true)
-                    setShowNextButton(true)
+                    // Controller visibility: Show only in normal mode (not fullscreen, not PIP)
+                    // Custom controls will be used for fullscreen and PIP.
+                    useController = !isFullScreen && !isPipMode
+                    // Task 2: Modify Fullscreen Button Logic (in PlayerView)
+                    setFullscreenButtonClickListener {
+                        if (isPipMode) {
+                            onPipModeChange(false) // Exit PIP
+                            onFullScreenChange(true) // Enter Fullscreen
+                        } else {
+                            onFullScreenChange(!isFullScreen) // Toggle Fullscreen as before
+                        }
+                    }
+                    // Hide default prev/next buttons if in fullscreen or PIP, as custom controls will be used
+                    setShowPreviousButton(!isFullScreen && !isPipMode)
+                    setShowNextButton(!isFullScreen && !isPipMode)
 
 
 
@@ -579,35 +757,67 @@ fun VideoPlayer(
             modifier = Modifier.fillMaxSize()
         )
 
-        // 添加全屏返回按钮
-        if (isFullScreen) {
+                    setShowTitle(false) // Hide title bar from PlayerView if we are managing it
+                }
+            },
+            modifier = Modifier.fillMaxSize()
+        )
+
+        // Custom controls based on mode
+        if (isPipMode) {
+            // Task 4b: PIP Player Controls
+            Box(modifier = Modifier.fillMaxSize()) { // Use Box to overlay controls in PIP
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.Center) // Center controls in PIP
+                        .background(Color.Black.copy(alpha = 0.5f)) // Semi-transparent background
+                        .padding(horizontal = 4.dp, vertical = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = {
+                        onPipModeChange(false)    // Exit PIP
+                        onFullScreenChange(true)  // Return to Fullscreen
+                    }) {
+                        Icon(Icons.Default.Fullscreen, contentDescription = "返回全屏", tint = Color.White, modifier = Modifier.size(28.dp)) // Slightly smaller icon for PIP
+                    }
+                    Spacer(modifier = Modifier.width(12.dp)) // Spacing between buttons
+                    IconButton(onClick = {
+                        onPipModeChange(false) // Close PIP
+                        // Optionally: exoPlayer.pause() or exoPlayer.stop() to save resources
+                    }) {
+                        Icon(Icons.Default.Close, contentDescription = "关闭画中画", tint = Color.White, modifier = Modifier.size(28.dp)) // Slightly smaller icon for PIP
+                    }
+                }
+            }
+        } else if (isFullScreen) { // Controls for FullScreen mode (Exit Fullscreen, Enter PIP)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    //.background(Color.Black.copy(alpha = 0.5f)) // 半透明背景
-                    .padding(4.dp)
+                    .padding(8.dp) // A bit more padding for fullscreen controls
                     .align(Alignment.TopStart),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // 返回按钮
-                IconButton(
-                    onClick = { onFullScreenChange(false) }
-                ) {
-                    Icon(
-                        Icons.Default.Home,
-                        contentDescription = "退出全屏",
-                        tint = Color.White
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = { onFullScreenChange(false) }) { // Exit fullscreen
+                        Icon(Icons.Default.Home, contentDescription = "退出全屏", tint = Color.White)
+                    }
+                    Text(
+                        text = "当前播放: $currentMediaId",
+                        color = Color.White,
+                        modifier = Modifier.padding(start = 8.dp),
+                        style = MaterialTheme.typography.bodyMedium, // Slightly larger text for visibility
                     )
                 }
-
-                // 标题文本
-                Text(
-                    text = "当前播放: ${currentMediaId}",
-                    color = Color.White,
-                    modifier = Modifier.padding(start = 4.dp),
-                    style = MaterialTheme.typography.bodySmall,
-                )
+                // "Enter PIP" button - visible only in fullscreen (and not PIP mode)
+                IconButton(onClick = {
+                    onPipModeChange(true)     // Enter PIP
+                    onFullScreenChange(false) // Exit fullscreen
+                }) {
+                    Icon(Icons.Default.PictureInPicture, contentDescription = "进入画中画模式", tint = Color.White)
+                }
             }
         }
+        // No custom overlay controls for normal (non-fullscreen, non-PIP) mode, PlayerView's own controls are used.
     }
 }
