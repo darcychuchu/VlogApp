@@ -6,13 +6,12 @@ package com.vlog.app.data.api
  */
 object ApiConstants {
     // 基础URL
-    const val BASE_URL = "https://66log.com/api/json/v1/"
-    const val VLOG_APP = "https://66log.com"
+    const val BASE_URL = "https://api.66log.com/api/json/v1/"
+    const val VLOG_APP = "https://api.66log.com"
     const val VLOG_APP_BLOG = "$VLOG_APP/blog/"
 
     // 图片相关URL
-    const val IMAGE_BASE_URL = "$VLOG_APP/file/attachments/"
-    const val IMAGE_BASE_URL_SMALL = "$IMAGE_BASE_URL/image/s/"
+    const val IMAGE_BASE_URL = "$VLOG_APP/file/attachments/image/s/"
 
     // 图片尺寸
     const val IMAGE_SIZE_SMALL = "s/"

@@ -2,7 +2,7 @@ package com.vlog.app.di
 
 object Constants {
 
-    const val VLOG_APP = "https://66log.com"
+    const val VLOG_APP = "https://api.66log.com"
     const val API_BASE_URL = "${VLOG_APP}/api/json/v1/"
     const val IMAGE_BASE_URL = "${VLOG_APP}/file/attachments/"
     const val VLOG_APP_BLOG= "${VLOG_APP}/blog/"

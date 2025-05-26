@@ -62,6 +62,9 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.runtime.DisposableEffect
@@ -96,6 +99,7 @@ fun VideoDetailScreen(
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
     var isFullScreen by remember { mutableStateOf(false) }
+    var isPipMode by remember { mutableStateOf(false) } // Task 1: Add State Variable
     // 创建 ExoPlayer 实例
     val exoPlayer = remember {
         ExoPlayer.Builder(context).build()
@@ -190,168 +194,288 @@ fun VideoDetailScreen(
         }
     }
 
-    if (isFullScreen) {
-        // 全屏模式下只显示播放器
-        VideoPlayer(
-            exoPlayer = exoPlayer,
-            isFullScreen = isFullScreen,
-            onFullScreenChange = { newValue -> isFullScreen = newValue }
-        )
-    } else {
+    Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
             topBar = {
-                TopAppBar(
-                    title = { Text(text = uiState.videoDetail?.title ?: stringResource(R.string.video_detail)) },
-                    navigationIcon = {
-                        IconButton(onClick = { navController.popBackStack() }) {
-                            Icon(Icons.Filled.Home, contentDescription = stringResource(R.string.back))
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                if (!isPipMode && !isFullScreen) {
+                    TopAppBar(
+                        title = { Text(text = uiState.videoDetail?.title ?: stringResource(R.string.video_detail)) },
+                        navigationIcon = {
+                            IconButton(onClick = { navController.popBackStack() }) {
+                                Icon(Icons.Filled.Home, contentDescription = stringResource(R.string.back))
+                            }
+                        },
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
                     )
-                )
+                }
             }
         ) { paddingValues ->
-            Box(modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    // Apply Scaffold's padding only when the TopAppBar is visible
+                    .padding(if (!isPipMode && !isFullScreen) paddingValues else PaddingValues(0.dp))
             ) {
-                when {
-                    uiState.isLoading -> {
-                        LoadingView(modifier = Modifier.padding(paddingValues))
-                    }
-                    uiState.error != null -> {
-                        ErrorView(
-                            message = uiState.error ?: stringResource(R.string.loading_error),
-                            onRetry = { viewModel.loadVideoDetail() },
-                            modifier = Modifier.padding(paddingValues)
-                        )
-                    }
-                    uiState.videoDetail != null -> {
-
-
-
-                        // 主内容
-                        Column(
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            Box(
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                key(currentPlayerUrl) {
-                                    // 视频播放器
-                                    VideoPlayer(
-                                        exoPlayer = exoPlayer,
-                                        isFullScreen = isFullScreen,
-                                        onFullScreenChange = { newValue -> isFullScreen = newValue }
-                                    )
-                                }
-
-
-                            }
-
-
-                            // 播放控制区域
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                // 左侧：详情/评论切换
-                                TabRow(
-                                    selectedTabIndex = uiState.selectedTab,
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Tab(
-                                        selected = uiState.selectedTab == 0,
-                                        onClick = { viewModel.selectTab(0) },
-                                        text = { Text("详情") }
-                                    )
-                                    Tab(
-                                        selected = uiState.selectedTab == 1,
-                                        onClick = { viewModel.selectTab(1) },
-                                        text = { Text("评论 (${uiState.comments.size})") }
-                                    )
-                                }
-
-                                Spacer(modifier = Modifier.width(8.dp))
-
-                                // 线路和选集整合按钮
-                                Button(
-                                    onClick = { viewModel.showGatherAndPlayerDialog() },
-                                    modifier = Modifier.wrapContentWidth()
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.List,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text("选集/线路")
-                                }
-                            }
-
-                            // 内容区域：详情或评论
-                            when (uiState.selectedTab) {
-                                0 -> {
-                                    // 详情
-                                    VideoDetailContent(videoDetail = videoDetail!!)
-
-                                    // 当前服务商的播放列表
-                                    if (uiState.players.isNotEmpty()) {
-                                        CurrentPlaylist(
-                                            players = uiState.players,
-                                            selectedPlayerUrl = uiState.selectedPlayerUrl,
-                                            gatherName = uiState.gathers.find { it.id == uiState.selectedGatherId }?.title,
-                                            onPlayerSelected = { playerUrl, playerTitle ->
-                                                viewModel.selectPlayerUrl(playerUrl, playerTitle)
-                                            }
-                                        )
-                                    }
-                                }
-                                1 -> {
-                                    // 评论
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(400.dp) // 固定高度防止无限约束
-                                    ) {
-                                        CommentSection(
-                                            comments = uiState.comments,
-                                            isLoading = uiState.isLoadingComments,
-                                            onPostComment = { content ->
-                                                viewModel.postComment(content)
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-
-                            // 推荐视频
-                            RecommendedVideos(
-                                videos = uiState.recommendedVideos,
-                                isLoading = uiState.isLoadingRecommendations,
-                                onVideoClick = { videoId ->
-                                    navController.navigate("video/$videoId")
+                if (!isFullScreen && !isPipMode) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        key(currentPlayerUrl) {
+                            VideoPlayer(
+                                exoPlayer = exoPlayer,
+                                isFullScreen = false, // Not fullscreen in this placement
+                                isPipMode = false,    // Not PIP in this placement
+                                onFullScreenChange = { fs ->
+                                    isFullScreen = fs
+                                    if (fs) isPipMode = false
+                                },
+                                onPipModeChange = { pip ->
+                                    isPipMode = pip
+                                    if (pip) isFullScreen = false
                                 }
                             )
-
-                            // 底部间距
-                            Spacer(modifier = Modifier.height(16.dp))
                         }
                     }
                 }
+
+                if (!isFullScreen) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        TabRow(
+                            selectedTabIndex = uiState.selectedTab,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Tab(selected = uiState.selectedTab == 0, onClick = { viewModel.selectTab(0) }, text = { Text("详情") })
+                            Tab(selected = uiState.selectedTab == 1, onClick = { viewModel.selectTab(1) }, text = { Text("评论 (${uiState.comments.size})") })
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Button(onClick = { viewModel.showGatherAndPlayerDialog() }, modifier = Modifier.wrapContentWidth()) {
+                            Icon(imageVector = Icons.AutoMirrored.Filled.List, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("选集/线路")
+                        }
+                    }
+                    when (uiState.selectedTab) {
+                        0 -> {
+                            //VideoDetailContent(videoDetail = uiState.videoDetail!!)
+                            if (uiState.players.isNotEmpty()) {
+                                CurrentPlaylist(
+                                    players = uiState.players,
+                                    selectedPlayerUrl = uiState.selectedPlayerUrl,
+                                    gatherName = uiState.gathers.find { it.id == uiState.selectedGatherId }?.title,
+                                    onPlayerSelected = { playerUrl, playerTitle -> viewModel.selectPlayerUrl(playerUrl, playerTitle) }
+                                )
+                            }
+                        }
+                        1 -> {
+                            Box(modifier = Modifier.fillMaxWidth().height(400.dp)) {
+                                CommentSection(
+                                    comments = uiState.comments,
+                                    isLoading = uiState.isLoadingComments,
+                                    onPostComment = { content -> viewModel.postComment(content) }
+                                )
+                            }
+                        }
+                    }
+                    RecommendedVideos(
+                        videos = uiState.recommendedVideos,
+                        isLoading = uiState.isLoadingRecommendations,
+                        onVideoClick = { videoId -> navController.navigate("video/$videoId") }
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+
+                if (!isFullScreen && !isPipMode) {
+                    val currentPadding = if (!isPipMode && !isFullScreen) paddingValues else PaddingValues(0.dp)
+                    when {
+                        uiState.isLoading -> LoadingView(modifier = Modifier.fillMaxSize().padding(currentPadding))
+                        uiState.error != null -> ErrorView(
+                            message = uiState.error ?: stringResource(R.string.loading_error),
+                            onRetry = { viewModel.loadVideoDetail() },
+                            modifier = Modifier.fillMaxSize().padding(currentPadding)
+                        )
+                    }
+                }
+
+                if (isFullScreen && !isPipMode) { // Fullscreen mode
+                    VideoPlayer(
+                        exoPlayer = exoPlayer,
+                        isFullScreen = true,
+                        isPipMode = false, // Explicitly false
+                        onFullScreenChange = { fs -> isFullScreen = fs /* PIP remains false */ },
+                        onPipModeChange = { pip -> // Enter PIP from Fullscreen
+                            isPipMode = pip
+                            if (pip) isFullScreen = false
+                        }
+                    )
+                } else if (isPipMode) { // PIP mode (floating player)
+                    Box(Modifier. size(80.dp, 40.dp).align(Alignment. End).background(Color. Green)){
+
+                    }
+//                    Box(
+//
+//                        modifier = Modifier.padding(16.dp).align() // Padding from the screen edges for the PIP window
+//                    ) {
+                        VideoPlayer(
+                            exoPlayer = exoPlayer,
+                            isFullScreen = false, // Not traditional fullscreen when in PIP
+                            isPipMode = true,     // Explicitly true
+                            onFullScreenChange = { fs -> // Called by PIP control to return to fullscreen
+                                isFullScreen = fs
+                                if (fs) isPipMode = false // Exit PIP if going fullscreen
+                            },
+                            onPipModeChange = { pip -> // Called by PIP controls (e.g., close button)
+                                isPipMode = pip
+                                if (!pip) isFullScreen = false // If PIP is closed, ensure fullscreen is also off
+                            }
+                        )
+                    }
+                }
+
+
+
+
+
+
+//                when {
+//                    uiState.isLoading -> {
+//                        LoadingView(modifier = Modifier.padding(paddingValues))
+//                    }
+//                    uiState.error != null -> {
+//                        ErrorView(
+//                            message = uiState.error ?: stringResource(R.string.loading_error),
+//                            onRetry = { viewModel.loadVideoDetail() },
+//                            modifier = Modifier.padding(paddingValues)
+//                        )
+//                    }
+//                    uiState.videoDetail != null -> {
+//
+//
+//
+//                        // 主内容
+//                        Column(
+//                            modifier = Modifier.fillMaxSize()
+//                        ) {
+//                            Box(
+//                                modifier = Modifier.fillMaxWidth()
+//                            ) {
+//                                key(currentPlayerUrl) {
+//                                    // 视频播放器
+//                                    VideoPlayer(
+//                                        exoPlayer = exoPlayer,
+//                                        isFullScreen = isFullScreen,
+//                                        onFullScreenChange = { newValue -> isFullScreen = newValue }
+//                                    )
+//                                }
+//
+//
+//                            }
+//
+//
+//                            // 播放控制区域
+//                            Row(
+//                                modifier = Modifier
+//                                    .fillMaxWidth()
+//                                    .padding(horizontal = 16.dp, vertical = 8.dp),
+//                                verticalAlignment = Alignment.CenterVertically
+//                            ) {
+//                                // 左侧：详情/评论切换
+//                                TabRow(
+//                                    selectedTabIndex = uiState.selectedTab,
+//                                    modifier = Modifier.weight(1f)
+//                                ) {
+//                                    Tab(
+//                                        selected = uiState.selectedTab == 0,
+//                                        onClick = { viewModel.selectTab(0) },
+//                                        text = { Text("详情") }
+//                                    )
+//                                    Tab(
+//                                        selected = uiState.selectedTab == 1,
+//                                        onClick = { viewModel.selectTab(1) },
+//                                        text = { Text("评论 (${uiState.comments.size})") }
+//                                    )
+//                                }
+//
+//                                Spacer(modifier = Modifier.width(8.dp))
+//
+//                                // 线路和选集整合按钮
+//                                Button(
+//                                    onClick = { viewModel.showGatherAndPlayerDialog() },
+//                                    modifier = Modifier.wrapContentWidth()
+//                                ) {
+//                                    Icon(
+//                                        imageVector = Icons.AutoMirrored.Filled.List,
+//                                        contentDescription = null,
+//                                        modifier = Modifier.size(16.dp)
+//                                    )
+//                                    Spacer(modifier = Modifier.width(4.dp))
+//                                    Text("选集/线路")
+//                                }
+//                            }
+//
+//                            // 内容区域：详情或评论
+//                            when (uiState.selectedTab) {
+//                                0 -> {
+//                                    // 详情
+//                                    VideoDetailContent(videoDetail = videoDetail!!)
+//
+//                                    // 当前服务商的播放列表
+//                                    if (uiState.players.isNotEmpty()) {
+//                                        CurrentPlaylist(
+//                                            players = uiState.players,
+//                                            selectedPlayerUrl = uiState.selectedPlayerUrl,
+//                                            gatherName = uiState.gathers.find { it.id == uiState.selectedGatherId }?.title,
+//                                            onPlayerSelected = { playerUrl, playerTitle ->
+//                                                viewModel.selectPlayerUrl(playerUrl, playerTitle)
+//                                            }
+//                                        )
+//                                    }
+//                                }
+//                                1 -> {
+//                                    // 评论
+//                                    Box(
+//                                        modifier = Modifier
+//                                            .fillMaxWidth()
+//                                            .height(400.dp) // 固定高度防止无限约束
+//                                    ) {
+//                                        CommentSection(
+//                                            comments = uiState.comments,
+//                                            isLoading = uiState.isLoadingComments,
+//                                            onPostComment = { content ->
+//                                                viewModel.postComment(content)
+//                                            }
+//                                        )
+//                                    }
+//                                }
+//                            }
+//
+//                            // 推荐视频
+//                            RecommendedVideos(
+//                                videos = uiState.recommendedVideos,
+//                                isLoading = uiState.isLoadingRecommendations,
+//                                onVideoClick = { videoId ->
+//                                    navController.navigate("video/$videoId")
+//                                }
+//                            )
+//
+//                            // 底部间距
+//                            Spacer(modifier = Modifier.height(16.dp))
+//                        }
+//                    }
+//                }
             }
         }
-
 
     }
 
 
-}
 
 
 /**
@@ -506,7 +630,9 @@ fun CurrentPlaylist(
 fun VideoPlayer(
     exoPlayer: ExoPlayer,
     isFullScreen: Boolean,
-    onFullScreenChange: (Boolean) -> Unit
+    isPipMode: Boolean,
+    onFullScreenChange: (Boolean) -> Unit,
+    onPipModeChange: (Boolean) -> Unit
 ) {
     // 跟踪当前媒体项ID的状态
     var currentMediaId by remember { mutableStateOf(exoPlayer.currentMediaItem?.mediaId ?: "未知") }
@@ -515,17 +641,35 @@ fun VideoPlayer(
     val onMediaItemChanged = { id: String ->
         currentMediaId = id
     }
-    Box(modifier = Modifier
-        .fillMaxWidth()
-        .then(if (isFullScreen) Modifier.fillMaxSize() else Modifier.aspectRatio(16f/9f))) {
+    val playerModifier = when {
+        isPipMode -> Modifier.size(200.dp, 112.dp).background(Color.Black) // PIP mode size
+        isFullScreen -> Modifier.fillMaxSize().background(Color.Black)    // Full screen size
+        else -> Modifier.fillMaxWidth().aspectRatio(16f / 9f).background(Color.Black) // Normal size
+    }
+
+    Box(modifier = playerModifier) {
         AndroidView(
             factory = { ctx ->
                 PlayerView(ctx).apply {
                     player = exoPlayer
-                    useController = true
-                    setFullscreenButtonClickListener { onFullScreenChange(!isFullScreen) }
-                    setShowPreviousButton(true)
-                    setShowNextButton(true)
+                    useController = !isFullScreen && !isPipMode
+                    //useController = true
+//                    setFullscreenButtonClickListener { onFullScreenChange(!isFullScreen) }
+//                    setShowPreviousButton(true)
+//                    setShowNextButton(true)
+
+                    setFullscreenButtonClickListener {
+                        if (isPipMode) {
+                            onPipModeChange(false) // Exit PIP
+                            onFullScreenChange(true) // Enter Fullscreen
+                        } else {
+                            onFullScreenChange(!isFullScreen) // Toggle Fullscreen as before
+                        }
+                    }
+                    // Hide default prev/next buttons if in fullscreen or PIP, as custom controls will be used
+                    setShowPreviousButton(!isFullScreen && !isPipMode)
+                    setShowNextButton(!isFullScreen && !isPipMode)
+
 
 
 
@@ -579,35 +723,90 @@ fun VideoPlayer(
             modifier = Modifier.fillMaxSize()
         )
 
-        // 添加全屏返回按钮
-        if (isFullScreen) {
+        if (isPipMode) {
+            // Task 4b: PIP Player Controls
+            Box(modifier = Modifier.fillMaxSize()) { // Use Box to overlay controls in PIP
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.Center) // Center controls in PIP
+                        .background(Color.Black.copy(alpha = 0.5f)) // Semi-transparent background
+                        .padding(horizontal = 4.dp, vertical = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = {
+                        onPipModeChange(false)    // Exit PIP
+                        onFullScreenChange(true)  // Return to Fullscreen
+                    }) {
+                        Icon(Icons.Default.FavoriteBorder, contentDescription = "返回全屏", tint = Color.White, modifier = Modifier.size(28.dp)) // Slightly smaller icon for PIP
+                    }
+                    Spacer(modifier = Modifier.width(12.dp)) // Spacing between buttons
+                    IconButton(onClick = {
+                        onPipModeChange(false) // Close PIP
+                        // Optionally: exoPlayer.pause() or exoPlayer.stop() to save resources
+                    }) {
+                        Icon(Icons.Default.Close, contentDescription = "关闭画中画", tint = Color.White, modifier = Modifier.size(28.dp)) // Slightly smaller icon for PIP
+                    }
+                }
+            }
+        } else if (isFullScreen) { // Controls for FullScreen mode (Exit Fullscreen, Enter PIP)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    //.background(Color.Black.copy(alpha = 0.5f)) // 半透明背景
-                    .padding(4.dp)
+                    .padding(8.dp) // A bit more padding for fullscreen controls
                     .align(Alignment.TopStart),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // 返回按钮
-                IconButton(
-                    onClick = { onFullScreenChange(false) }
-                ) {
-                    Icon(
-                        Icons.Default.Home,
-                        contentDescription = "退出全屏",
-                        tint = Color.White
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = { onFullScreenChange(false) }) { // Exit fullscreen
+                        Icon(Icons.Default.Home, contentDescription = "退出全屏", tint = Color.White)
+                    }
+                    Text(
+                        text = "当前播放: $currentMediaId",
+                        color = Color.White,
+                        modifier = Modifier.padding(start = 8.dp),
+                        style = MaterialTheme.typography.bodyMedium, // Slightly larger text for visibility
                     )
                 }
-
-                // 标题文本
-                Text(
-                    text = "当前播放: ${currentMediaId}",
-                    color = Color.White,
-                    modifier = Modifier.padding(start = 4.dp),
-                    style = MaterialTheme.typography.bodySmall,
-                )
+                // "Enter PIP" button - visible only in fullscreen (and not PIP mode)
+                IconButton(onClick = {
+                    onPipModeChange(true)     // Enter PIP
+                    onFullScreenChange(false) // Exit fullscreen
+                }) {
+                    Icon(Icons.Default.ExitToApp, contentDescription = "进入画中画模式", tint = Color.White)
+                }
             }
         }
+
+        // 添加全屏返回按钮
+//        if (isFullScreen) {
+//            Row(
+//                modifier = Modifier
+//                    .fillMaxWidth()
+//                    //.background(Color.Black.copy(alpha = 0.5f)) // 半透明背景
+//                    .padding(4.dp)
+//                    .align(Alignment.TopStart),
+//                verticalAlignment = Alignment.CenterVertically
+//            ) {
+//                // 返回按钮
+//                IconButton(
+//                    onClick = { onFullScreenChange(false) }
+//                ) {
+//                    Icon(
+//                        Icons.Default.Home,
+//                        contentDescription = "退出全屏",
+//                        tint = Color.White
+//                    )
+//                }
+//
+//                // 标题文本
+//                Text(
+//                    text = "当前播放: ${currentMediaId}",
+//                    color = Color.White,
+//                    modifier = Modifier.padding(start = 4.dp),
+//                    style = MaterialTheme.typography.bodySmall,
+//                )
+//            }
+//        }
     }
 }

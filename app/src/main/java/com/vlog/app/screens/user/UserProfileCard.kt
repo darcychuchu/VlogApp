@@ -66,7 +66,7 @@ fun UserProfileCard(
                     Image(
                         painter = rememberAsyncImagePainter(
                             ImageRequest.Builder(LocalContext.current)
-                                .data(ApiConstants.IMAGE_BASE_URL + user.avatar)
+                                .data("${ApiConstants.IMAGE_BASE_URL}" + user.avatar)
                                 .crossfade(true)
                                 .build()
                         ),
